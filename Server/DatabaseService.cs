@@ -6,6 +6,7 @@ namespace Stop.Server
     public interface IDatabaseService{
         Game FetchGame(string id);
         bool SaveGame(Game game);
+        void DeleteGame(string id);
     }
     
     public class DatabaseService : IDatabaseService{
@@ -29,6 +30,11 @@ namespace Stop.Server
                 return games[id];
             
             return null;
+        }
+        public void DeleteGame(string id)
+        {
+            if (games.ContainsKey(id))
+                games.Remove(id);
         }
     }
 }

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Stop.Shared;
-using Nanoid;
 
 namespace Stop.Server
 {
@@ -24,6 +23,17 @@ namespace Stop.Server
             var setGame = Db.SaveGame(game);
             await Clients.All.SendAsync("GameStarted", game);
         }
+        
+        public async Task StartRound(string id){
+            var game = Db.FetchGame(id);
+            game.CurrentRound = game.Rounds.Count();
+            var round = new Round();
+            round.Letter = (char)('a' + new Random().Next(0, 26)) + "";
+            round.Responses = new Dictionary<string, Dictionary<string, string>>();
+            game.Rounds.Add(round);
+            Db.SaveGame(game);
+            await Clients.All.SendAsync("RoundStarted", game);
+        }
 
         public async Task JoinGame(string id, string password, Player player)
         {
@@ -34,14 +44,31 @@ namespace Stop.Server
                 return;
             }
 
-            if(!game.Players.Contains(player))
+            if(!game.Players.Exists(x => x.Name == player.Name))
                 game.Players.Add(player);
 
             Db.SaveGame(game);
             await Clients.All.SendAsync("GameLoaded", game);
         }
+        
         public async Task LoadGame(string id, string password){
             var game = Db.FetchGame(id);
+            await Clients.All.SendAsync("GameLoaded", game);
+        }
+        
+        public async Task DeleteGame(string id, string password){
+            Db.DeleteGame(id);
+            await Clients.All.SendAsync("GameDeleted", null);
+        }
+
+        public async Task SaveAnswers(string id, string password, Player player, Dictionary<string, string> answers)
+        {
+            var game = Db.FetchGame(id);
+            if(!game.Rounds.Last().Responses.ContainsKey(player.Name))
+                game.Rounds.Last().Responses.Add(player.Name, answers);
+            else
+                game.Rounds.Last().Responses[player.Name] = answers;
+            
             await Clients.All.SendAsync("GameLoaded", game);
         }
     }

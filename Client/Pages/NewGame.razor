@@ -1,34 +1,86 @@
 ﻿@page "/new-game"
 @using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.Extensions.Logging
 @using Stop.Shared
 @inject NavigationManager NavigationManager
 @implements IDisposable
+@inject Blazored.LocalStorage.ILocalStorageService localStore
 
-<h1>Create new game</h1>
 
-<input type="text" class="editable" @bind="Topic" />
-<button class="btn btn-primary" @onclick="AddTopic">Add</button>
-
-<ul>
-@foreach (var topic in Topics)
+@if (CurrentGame == null)
 {
-    <li>@topic - <button @onclick="@((e) => RemoveTopic(topic))">Remove</button></li>
+    <h1>Create new game</h1>
+
+    <input type="text" class="editable" @bind="Topic"/>
+    <button class="btn btn-primary" @onclick="AddTopic">Add</button>
+
+    <ul>
+        @foreach (var topic in Topics)
+        {
+            <li>@topic - <button @onclick="@((e) => RemoveTopic(topic))">Remove</button></li>
+        }
+    </ul>
+
+    <button class="btn btn-primary" @onclick="StartGame">Start game</button>
 }
-</ul>
-
-<button class="btn btn-primary" @onclick="StartGame">Start game</button>
-
-@if(CreatedGame != null){
+else
+{
+    var link = NavigationManager.ToAbsoluteUri($"/game/{CurrentGame.Id}?password={CurrentGame.Password}");
     
-    <p><span>Url: @CreatedGame.Id</span><br>
-        <span>Password: @CreatedGame.Password</span></p>
-    <p>Link: @NavigationManager.ToAbsoluteUri($"/game/{CreatedGame.Id}?password={CreatedGame.Password}")</p>
+    <h1>New game</h1>
+    <p><span>Url: @CurrentGame.Id</span><br>
+        <span>Password: @CurrentGame.Password</span></p>
+    <p>Link: <a href="@link">@link</a></p>
+                                      
+                                      
+    <table>
+        <thead>
+        <th>Player</th>
+        @foreach (var topic in CurrentGame.Topics)
+        {
+            <th>@topic</th>
+        }
+        </thead>
+        <tbody>
+        @if (CurrentGame.Rounds.Count > 0)
+        {
+            foreach (var response in CurrentGame.Rounds.Last().Responses)
+            {
+                <tr>
+                    <td>@response.Key</td>
+                    @foreach (var answers in @response.Value)
+                    {
+                        <td>@answers.Value</td>
+                    }
+                </tr>
+            }
+        }
+        else
+        {
+            foreach (var player in CurrentGame.Players)
+            {
+                <tr>
+                    <td>@player.Name</td>
+                    @foreach (var topic in CurrentGame.Topics)
+                    {
+                        <td></td>
+                    }
+                </tr>
+            }
+        }
+        
+        </tbody>
+    </table>
+    
+    
+    <button class="btn btn-primary" @onclick="StartRound">Start round</button>
+    <button class="btn btn-danger" @onclick="DeleteGame">Delete game</button>
 }
 
 @code {
     private HubConnection hubConnection;
     public string Topic { get; set; }
-    public Stop.Shared.Game CreatedGame { get; set; }
+    public Stop.Shared.Game CurrentGame { get; set; }
     public List<string> Topics { get; set; }
 
     protected override async Task OnInitializedAsync()
@@ -36,13 +88,38 @@
         Topics = new List<string>();
 
         hubConnection = new HubConnectionBuilder().WithUrl(NavigationManager.ToAbsoluteUri("/websocket")).Build();
-        hubConnection.On<Stop.Shared.Game>("GameStarted", (game) =>
+        hubConnection.On<Stop.Shared.Game>("GameStarted", async (game) =>
         {
-            CreatedGame = game;
+            CurrentGame = game;
+            await localStore.SetItemAsync<string>("game_id", CurrentGame.Id);
+            await localStore.SetItemAsync<string>("game_password", CurrentGame.Password);
+            StateHasChanged();
+        });
+        hubConnection.On<Stop.Shared.Game>("GameLoaded", (game) =>
+        {
+            CurrentGame = game;
+            StateHasChanged();
+        });
+        hubConnection.On<Stop.Shared.Game>("RoundStarted", (game) =>
+        {
+            CurrentGame = game;
+            StateHasChanged();
+        });
+        hubConnection.On<Stop.Shared.Game>("GameDeleted", async (x) =>
+        {
+            CurrentGame = null;
+            await localStore.RemoveItemAsync("game_id");
+            await localStore.RemoveItemAsync("game_password");
             StateHasChanged();
         });
 
         await hubConnection.StartAsync();
+        
+        
+        var gameId = await localStore.GetItemAsync<string>("game_id");
+        var password = await localStore.GetItemAsync<string>("game_password");
+        if(!string.IsNullOrWhiteSpace(gameId) && !string.IsNullOrWhiteSpace(password))
+            await hubConnection.InvokeAsync("LoadGame", gameId, password);
     }
 
     public bool IsConnected => hubConnection.State == HubConnectionState.Connected;
@@ -55,6 +132,7 @@
     private void AddTopic()
     {
         Topics.Add(Topic);
+        Topic = "";
     }
     private void RemoveTopic(string topic)
     {
@@ -64,6 +142,16 @@
     private async void StartGame()
     {
         await hubConnection.InvokeAsync("StartGame", Topics);
+    }
+    
+    private async void StartRound()
+    {
+        await hubConnection.InvokeAsync("StartRound", CurrentGame.Id);
+    }
+
+    private async void DeleteGame()
+    {
+        await hubConnection.InvokeAsync("DeleteGame", CurrentGame.Id, CurrentGame.Password);
     }
 
 

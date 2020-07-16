@@ -4,10 +4,7 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @inject HttpClient Http
 @using Microsoft.AspNetCore.WebUtilities
-
-<h1>Weather forecast</h1>
-
-<p>This component demonstrates fetching data from the server.</p>
+@inject Blazored.LocalStorage.ILocalStorageService localStore
 
 @if (CurrentGame == null)
 {
@@ -16,25 +13,33 @@
     <p><label>Player name: <input type="text" class="editable" @bind="player.Name" /></label></p>
     <button class="btn btn-primary" @onclick="JoinGame">Join</button>
 }
+else if (CurrentGame.CurrentRound < 0)
+{
+    <p>waiting for game to start</p>
+}
 else
 {
+    <h1>Current Letter: <b>@CurrentGame.Rounds.Last().Letter</b></h1>
     <table class="table">
         <thead>
-            <tr>
-                <th>Topic</th>
-                <th>Your Answer</th>
-            </tr>
+        <tr>
+            <th>Topic</th>
+            <th>Your Answer</th>
+            <th></th>
+        </tr>
         </thead>
         <tbody>
-            @foreach (var topic in CurrentGame.Topics)
-            {
-                <tr>
-                    <td>@topic</td>
-                    <td></td>
-                </tr>
-            }
+        @foreach (var topic in CurrentGame.Topics)
+        {
+            <tr>
+                <td>@topic</td>
+                <td><input type="text" class="editable" @onchange="@(e => ChangeAnswer(e, topic))" /></td>
+                <td>@Answers[@topic]</td>
+            </tr>
+        }
         </tbody>
     </table>
+    <button class="btn btn-primary" @onclick="FinishGame">Done!</button>
 }
 
 @if (!string.IsNullOrWhiteSpace(Alert))
@@ -50,17 +55,16 @@ else
     public string password { get; set; }
     public string Alert { get; set; }
     
-    public Stop.Shared.Player player { get; set; }
+    public Stop.Shared.Player player { get; set; } = new Player();
     public Stop.Shared.Game CurrentGame { get; set; }
-    public List<string> Answers { get; set; }
+    public Dictionary<string, string> Answers { get; set; } = new Dictionary<string, string>();
     private HubConnection hubConnection;
     
     public bool IsConnected => hubConnection.State == HubConnectionState.Connected;
     public void Dispose() => _ = hubConnection.DisposeAsync();
     protected override async Task OnInitializedAsync()
     {
-        Answers = new List<string>();
-        player = new Player();
+        player.Name = await localStore.GetItemAsync<string>("player_name");
         if (QueryHelpers.ParseQuery(new Uri(NavigationManager.Uri).Query).TryGetValue("password", out var value))
         {
             password = value;
@@ -71,21 +75,49 @@ else
         {
             if (game == null)
             {
-                Alert += $"Game '{gameId}' not found";
+                Alert = $"Game '{gameId}' not found";
             }
             else
             {
                 CurrentGame = game;
+                foreach (var topic in CurrentGame.Topics)
+                    Answers.Add(topic, "");
+
                 StateHasChanged();
             }
         });
-        
+        hubConnection.On<Stop.Shared.Game>("RoundStarted", (game) =>
+        {
+            CurrentGame = game;
+            StateHasChanged();
+        });
+        hubConnection.On<Stop.Shared.Game>("GameDeleted", (game) =>
+        {
+            CurrentGame = null;
+            StateHasChanged();
+        });
+
         await hubConnection.StartAsync();
+        
+        if(!string.IsNullOrWhiteSpace(gameId) && !string.IsNullOrWhiteSpace(password) && !string.IsNullOrWhiteSpace(player.Name))
+            JoinGame();
+    }
+
+    private async void ChangeAnswer(ChangeEventArgs e, string topic)
+    {
+        Answers[topic] = e.Value.ToString();
+        await hubConnection.InvokeAsync("SaveAnswers", gameId, password, player, Answers);
     }
 
     private async void JoinGame()
     {
+        await localStore.SetItemAsync<string>("player_name", player.Name);
         await hubConnection.InvokeAsync("JoinGame", gameId, password, player);
+    }
+
+    private async void FinishGame()
+    {
+        await localStore.SetItemAsync<string>("FinishGame", player.Name);
     }
 
 
