@@ -28,14 +28,23 @@ namespace Stop.Server
             var game = Db.FetchGame(id);
             var round = new Round();
             round.Letter = (char)('a' + new Random().Next(0, 26)) + "";
-            round.Responses = new Dictionary<string, Dictionary<string, string>>();
             game.Rounds.Add(round);
             Db.SaveGame(game);
             await Clients.All.SendAsync("RoundStarted", game);
         }
-        public async Task FinishRound(string id, string player){
+        public async Task FinishRound(string id, string player_){
             var game = Db.FetchGame(id);
             game.Rounds.Last().Finished = true;
+            foreach (var player in game.Players)
+            {
+                foreach (var topic in game.Topics)
+                {
+                    if (game.Rounds.Last().Players[player.Name].Answers[topic].StartsWith(game.Rounds.Last().Letter))
+                    {
+                        game.Rounds.Last().Players[player.Name].Score += 1;
+                    }
+                }
+            }
             Db.SaveGame(game);
             await Clients.All.SendAsync("GameLoaded", game);
         }
@@ -69,10 +78,10 @@ namespace Stop.Server
         public async Task SaveAnswers(string id, string password, Player player, Dictionary<string, string> answers)
         {
             var game = Db.FetchGame(id);
-            if(!game.Rounds.Last().Responses.ContainsKey(player.Name))
-                game.Rounds.Last().Responses.Add(player.Name, answers);
+            if(!game.Rounds.Last().Players.ContainsKey(player.Name))
+                game.Rounds.Last().Players.Add(player.Name, new PlayerRound(){ Answers = answers });
             else
-                game.Rounds.Last().Responses[player.Name] = answers;
+                game.Rounds.Last().Players[player.Name].Answers = answers;
             
             await Clients.All.SendAsync("GameLoaded", game);
         }

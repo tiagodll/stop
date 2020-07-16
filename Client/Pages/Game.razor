@@ -36,14 +36,15 @@ else if (CurrentGame.Rounds.Last().Finished == true)
         }
         </thead>
         <tbody>
-        @foreach (var response in CurrentGame.Rounds.Last().Responses)
+        @foreach (var player in CurrentGame.Rounds.Last().Players)
         {
             <tr>
-                <td>@response.Key</td>
-                @foreach (var answers in @response.Value)
+                <td>@player.Key</td>
+                @foreach (var answers in player.Value.Answers)
                 {
                     <td>@answers.Value</td>
                 }
+                <td>@player.Value.Score</td>
             </tr>
         }
         </tbody>
