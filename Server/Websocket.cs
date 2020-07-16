@@ -26,13 +26,18 @@ namespace Stop.Server
         
         public async Task StartRound(string id){
             var game = Db.FetchGame(id);
-            game.CurrentRound = game.Rounds.Count();
             var round = new Round();
             round.Letter = (char)('a' + new Random().Next(0, 26)) + "";
             round.Responses = new Dictionary<string, Dictionary<string, string>>();
             game.Rounds.Add(round);
             Db.SaveGame(game);
             await Clients.All.SendAsync("RoundStarted", game);
+        }
+        public async Task FinishRound(string id, string player){
+            var game = Db.FetchGame(id);
+            game.Rounds.Last().Finished = true;
+            Db.SaveGame(game);
+            await Clients.All.SendAsync("GameLoaded", game);
         }
 
         public async Task JoinGame(string id, string password, Player player)
@@ -48,7 +53,7 @@ namespace Stop.Server
                 game.Players.Add(player);
 
             Db.SaveGame(game);
-            await Clients.All.SendAsync("GameLoaded", game);
+            await Clients.All.SendAsync("JoinedGame", game);
         }
         
         public async Task LoadGame(string id, string password){
@@ -68,6 +73,17 @@ namespace Stop.Server
                 game.Rounds.Last().Responses.Add(player.Name, answers);
             else
                 game.Rounds.Last().Responses[player.Name] = answers;
+            
+            await Clients.All.SendAsync("GameLoaded", game);
+        }
+
+        public async Task RenamePlayer(string id, string oldName, string newName)
+        {
+            var game = Db.FetchGame(id);
+            var i = game.Players.FindIndex(x => x.Name == oldName);
+            if (i >= 0)
+                game.Players[i].Name = newName;
+            Db.SaveGame(game);
             
             await Clients.All.SendAsync("GameLoaded", game);
         }

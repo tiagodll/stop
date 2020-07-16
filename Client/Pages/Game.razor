@@ -1,4 +1,9 @@
 @page "/game/{gameId}"
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading.Tasks
+@using Microsoft.AspNetCore.Components
 @using Stop.Shared
 @inject NavigationManager NavigationManager
 @using Microsoft.AspNetCore.SignalR.Client
@@ -13,9 +18,36 @@
     <p><label>Player name: <input type="text" class="editable" @bind="player.Name" /></label></p>
     <button class="btn btn-primary" @onclick="JoinGame">Join</button>
 }
-else if (CurrentGame.CurrentRound < 0)
+else if (CurrentGame.Rounds.Count == 0)
 {
     <p>waiting for game to start</p>
+    <p><label>Player name: <input type="text" class="editable" @bind="Renamed" /></label></p>
+    <button class="btn btn-primary" @onclick="RenamePlayer">Rename</button>
+}
+else if (CurrentGame.Rounds.Last().Finished == true)
+{
+    <h1>Round finished. Letter: <b>@CurrentGame.Rounds.Last().Letter</b></h1>
+    <table>
+        <thead>
+        <th>Player</th>
+        @foreach (var topic in CurrentGame.Topics)
+        {
+            <th>@topic</th>
+        }
+        </thead>
+        <tbody>
+        @foreach (var response in CurrentGame.Rounds.Last().Responses)
+        {
+            <tr>
+                <td>@response.Key</td>
+                @foreach (var answers in @response.Value)
+                {
+                    <td>@answers.Value</td>
+                }
+            </tr>
+        }
+        </tbody>
+    </table>
 }
 else
 {
@@ -39,7 +71,7 @@ else
         }
         </tbody>
     </table>
-    <button class="btn btn-primary" @onclick="FinishGame">Done!</button>
+    <button class="btn btn-primary" @onclick="FinishRound">Done!</button>
 }
 
 @if (!string.IsNullOrWhiteSpace(Alert))
@@ -54,6 +86,8 @@ else
     public string gameId { get; set; }
     public string password { get; set; }
     public string Alert { get; set; }
+
+    public string Renamed { get; set; }
     
     public Stop.Shared.Player player { get; set; } = new Player();
     public Stop.Shared.Game CurrentGame { get; set; }
@@ -71,7 +105,7 @@ else
         }
         
         hubConnection = new HubConnectionBuilder().WithUrl(NavigationManager.ToAbsoluteUri("/websocket")).Build();
-        hubConnection.On<Stop.Shared.Game>("GameLoaded", (game) =>
+        hubConnection.On<Stop.Shared.Game>("JoinedGame", (game) =>
         {
             if (game == null)
             {
@@ -85,6 +119,11 @@ else
 
                 StateHasChanged();
             }
+        });
+        hubConnection.On<Stop.Shared.Game>("GameLoaded", (game) =>
+        {
+            CurrentGame = game;
+            StateHasChanged();
         });
         hubConnection.On<Stop.Shared.Game>("RoundStarted", (game) =>
         {
@@ -111,13 +150,20 @@ else
 
     private async void JoinGame()
     {
+        Renamed = player.Name;
         await localStore.SetItemAsync<string>("player_name", player.Name);
         await hubConnection.InvokeAsync("JoinGame", gameId, password, player);
     }
 
-    private async void FinishGame()
+    private async void FinishRound()
     {
-        await localStore.SetItemAsync<string>("FinishGame", player.Name);
+        await hubConnection.InvokeAsync("FinishRound",CurrentGame.Id, player.Name);
+    }
+
+    private async void RenamePlayer()
+    {
+        await hubConnection.InvokeAsync("RenamePlayer", CurrentGame.Id, player.Name, Renamed);
+        await localStore.SetItemAsync<string>("player_name", Renamed);
     }
 
 
