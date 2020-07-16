@@ -44,6 +44,7 @@ else
         {
             <th>@topic</th>
         }
+        <th>score</th>
         </thead>
         <tbody>
         @if (CurrentGame.Rounds.Count > 0)
@@ -52,10 +53,14 @@ else
             {
                 <tr>
                     <td>@roundPlayer.Key</td>
-                    @foreach (var answers in @roundPlayer.Value.Answers)
+                    @foreach (var answer in @roundPlayer.Value.Answers)
                     {
-                        <td>@answers.Value</td>
+                        <td>
+                            @answer.Value
+                            <input type="checkbox" />
+                        </td>
                     }
+                    <td>@roundPlayer.Value.Score</td>
                 </tr>
             }
         }
@@ -105,6 +110,11 @@ else
             StateHasChanged();
         });
         hubConnection.On<Stop.Shared.Game>("RoundStarted", (game) =>
+        {
+            CurrentGame = game;
+            StateHasChanged();
+        });
+        hubConnection.On<Stop.Shared.Game>("JoinedGame", (game) =>
         {
             CurrentGame = game;
             StateHasChanged();

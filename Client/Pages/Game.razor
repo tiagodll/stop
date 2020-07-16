@@ -34,6 +34,7 @@ else if (CurrentGame.Rounds.Last().Finished == true)
         {
             <th>@topic</th>
         }
+        <th>Score</th>
         </thead>
         <tbody>
         @foreach (var player in CurrentGame.Rounds.Last().Players)
@@ -42,7 +43,7 @@ else if (CurrentGame.Rounds.Last().Finished == true)
                 <td>@player.Key</td>
                 @foreach (var answers in player.Value.Answers)
                 {
-                    <td>@answers.Value</td>
+                    <td>@answers.Value.Answer</td>
                 }
                 <td>@player.Value.Score</td>
             </tr>
@@ -67,7 +68,7 @@ else
             <tr>
                 <td>@topic</td>
                 <td><input type="text" class="editable" @onchange="@(e => ChangeAnswer(e, topic))" /></td>
-                <td>@Answers[@topic]</td>
+                <td>@Answers[@topic].Answer</td>
             </tr>
         }
         </tbody>
@@ -92,7 +93,7 @@ else
     
     public Stop.Shared.Player player { get; set; } = new Player();
     public Stop.Shared.Game CurrentGame { get; set; }
-    public Dictionary<string, string> Answers { get; set; } = new Dictionary<string, string>();
+    public Dictionary<string, RoundAnswer> Answers { get; set; } = new Dictionary<string, RoundAnswer>();
     private HubConnection hubConnection;
     
     public bool IsConnected => hubConnection.State == HubConnectionState.Connected;
@@ -116,7 +117,7 @@ else
             {
                 CurrentGame = game;
                 foreach (var topic in CurrentGame.Topics)
-                    Answers.Add(topic, "");
+                    Answers.Add(topic, new RoundAnswer(""));
 
                 StateHasChanged();
             }
@@ -145,7 +146,7 @@ else
 
     private async void ChangeAnswer(ChangeEventArgs e, string topic)
     {
-        Answers[topic] = e.Value.ToString();
+        Answers[topic].Answer = e.Value.ToString();
         await hubConnection.InvokeAsync("SaveAnswers", gameId, password, player, Answers);
     }
 
