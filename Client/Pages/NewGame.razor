@@ -1,0 +1,71 @@
+﻿@page "/new-game"
+@using Microsoft.AspNetCore.SignalR.Client
+@using Stop.Shared
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<h1>Create new game</h1>
+
+<input type="text" class="editable" @bind="Topic" />
+<button class="btn btn-primary" @onclick="AddTopic">Add</button>
+
+<ul>
+@foreach (var topic in Topics)
+{
+    <li>@topic - <button @onclick="@((e) => RemoveTopic(topic))">Remove</button></li>
+}
+</ul>
+
+<button class="btn btn-primary" @onclick="StartGame">Start game</button>
+
+@if(CreatedGame != null){
+    <span>Url: @CreatedGame.Id</span><br>
+    <span>Password: @CreatedGame.Password</span><br>
+}
+
+@code {
+    private HubConnection hubConnection;
+    public string Topic { get; set; }
+    public Game CreatedGame { get; set; }
+    public List<string> Topics { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Topics = new List<string>();
+
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/websocket"))
+            .Build();
+
+        hubConnection.On<Game>("GameStarted", (game) =>
+        {
+            CreatedGame = game;
+            StateHasChanged();
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    public bool IsConnected => hubConnection.State == HubConnectionState.Connected;
+        
+    public void Dispose()
+    {
+        _ = hubConnection.DisposeAsync();
+    }
+
+    private void AddTopic()
+    {
+        Topics.Add(Topic);
+    }
+    private void RemoveTopic(string topic)
+    {
+        Topics.Remove(topic);
+    }
+    
+    private async void StartGame()
+    {
+        await hubConnection.InvokeAsync("StartGame", Topics);
+    }
+
+
+}
