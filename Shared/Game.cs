@@ -12,8 +12,8 @@ namespace Stop.Shared
 
         public string HostId { get; set; }
 
-        public List<Player> Players { get; set; }
-        public List<string> Topics {get;set;}
-        public List<Round> Rounds {get;set;}
+        public List<Player> Players { get; set; } = new List<Player>();
+        public List<string> Topics {get;set;} = new List<string>();
+        public List<Round> Rounds {get;set;} = new List<Round>();
     }
 }

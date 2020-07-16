@@ -19,25 +19,24 @@
 <button class="btn btn-primary" @onclick="StartGame">Start game</button>
 
 @if(CreatedGame != null){
-    <span>Url: @CreatedGame.Id</span><br>
-    <span>Password: @CreatedGame.Password</span><br>
+    
+    <p><span>Url: @CreatedGame.Id</span><br>
+        <span>Password: @CreatedGame.Password</span></p>
+    <p>Link: @NavigationManager.ToAbsoluteUri($"/game/{CreatedGame.Id}?password={CreatedGame.Password}")</p>
 }
 
 @code {
     private HubConnection hubConnection;
     public string Topic { get; set; }
-    public Game CreatedGame { get; set; }
+    public Stop.Shared.Game CreatedGame { get; set; }
     public List<string> Topics { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         Topics = new List<string>();
 
-        hubConnection = new HubConnectionBuilder()
-            .WithUrl(NavigationManager.ToAbsoluteUri("/websocket"))
-            .Build();
-
-        hubConnection.On<Game>("GameStarted", (game) =>
+        hubConnection = new HubConnectionBuilder().WithUrl(NavigationManager.ToAbsoluteUri("/websocket")).Build();
+        hubConnection.On<Stop.Shared.Game>("GameStarted", (game) =>
         {
             CreatedGame = game;
             StateHasChanged();

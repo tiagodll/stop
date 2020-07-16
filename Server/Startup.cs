@@ -7,7 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Linq;
 using Stop.Shared;
-using System.Collections.Generic;
 
 namespace Stop.Server
 {
@@ -65,31 +64,6 @@ namespace Stop.Server
                 endpoints.MapControllers();
                 endpoints.MapFallbackToFile("index.html");
             });
-        }
-    }
-
-    public interface IDatabaseService{
-        // DatabaseService GetInstance();
-        Game FetchGame(string id);
-        bool SetGame(Game game);
-    }
-    public class DatabaseService : IDatabaseService{
-        private static Dictionary<string, Game> games = new Dictionary<string, Game>();
-
-        private static readonly DatabaseService _mySingletonServiceInstance = new DatabaseService();
-
-        public DatabaseService(){}
-        
-        public static DatabaseService GetInstance() => _mySingletonServiceInstance;
-
-        public Game FetchGame(string id) => games[id];
-        public bool SetGame(Game game){ 
-            if(games.ContainsKey(game.Id))
-                games[game.Id] = game;
-            else
-                games.Add(game.Id, game);
-
-            return true;
         }
     }
 }

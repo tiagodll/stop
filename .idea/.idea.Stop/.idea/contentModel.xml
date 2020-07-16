@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ContentModelStore">
-    <e p="$USER_HOME$/.Rider2019.3/system/extResources" t="IncludeRecursive" />
-    <e p="$USER_HOME$/.Rider2019.3/system/resharper-host/local/Transient/ReSharperHost/v193/SolutionCaches/_Stop.-677848637.00" t="ExcludeRecursive" />
-    <e p="$PROJECT_DIR$" t="IncludeFlat">
+    <e p="C:\tiago\code\Stop" t="IncludeFlat">
       <e p="Client" t="IncludeRecursive">
+        <e p="_Imports.razor" t="Include" />
         <e p="App.razor" t="Include" />
+        <e p="bin" t="ExcludeRecursive" />
+        <e p="obj" t="ExcludeRecursive">
+          <e p="Debug" t="Include">
+            <e p="netstandard2.1" t="Include">
+              <e p="Stop.Client.AssemblyInfo.cs" t="Include" />
+            </e>
+          </e>
+        </e>
         <e p="Pages" t="Include">
           <e p="Game.razor" t="Include" />
           <e p="Index.razor" t="Include" />
@@ -21,15 +28,6 @@
           <e p="SurveyPrompt.razor" t="Include" />
         </e>
         <e p="Stop.Client.csproj" t="IncludeRecursive" />
-        <e p="_Imports.razor" t="Include" />
-        <e p="bin" t="ExcludeRecursive" />
-        <e p="obj" t="ExcludeRecursive">
-          <e p="Debug" t="Include">
-            <e p="netstandard2.1" t="Include">
-              <e p="Stop.Client.AssemblyInfo.cs" t="Include" />
-            </e>
-          </e>
-        </e>
         <e p="wwwroot" t="Include">
           <e p="css" t="Include">
             <e p="app.css" t="Include" />
@@ -38,9 +36,6 @@
               <e p="bootstrap.min.css.map" t="Include" />
             </e>
             <e p="open-iconic" t="Include">
-              <e p="FONT-LICENSE" t="Include" />
-              <e p="ICON-LICENSE" t="Include" />
-              <e p="README.md" t="Include" />
               <e p="font" t="Include">
                 <e p="css" t="Include">
                   <e p="open-iconic-bootstrap.min.css" t="Include" />
@@ -53,15 +48,29 @@
                   <e p="open-iconic.woff" t="Include" />
                 </e>
               </e>
+              <e p="FONT-LICENSE" t="Include" />
+              <e p="ICON-LICENSE" t="Include" />
+              <e p="README.md" t="Include" />
             </e>
           </e>
           <e p="favicon.ico" t="Include" />
           <e p="index.html" t="Include" />
         </e>
       </e>
+      <e p="packages" t="ExcludeRecursive" />
       <e p="Server" t="IncludeRecursive">
-        <e p="Controllers" t="Include">
-          <e p="WeatherForecastController.cs" t="Include" />
+        <e p="appsettings.Development.json" t="Include" />
+        <e p="appsettings.json" t="Include" />
+        <e p="bin" t="ExcludeRecursive" />
+        <e p="Controllers" t="Include" />
+        <e p="DatabaseService.cs" t="Include" />
+        <e p="obj" t="ExcludeRecursive">
+          <e p="Debug" t="Include">
+            <e p="netcoreapp3.1" t="Include">
+              <e p="Stop.Server.AssemblyInfo.cs" t="Include" />
+              <e p="Stop.Server.RazorAssemblyInfo.cs" t="Include" />
+            </e>
+          </e>
         </e>
         <e p="Pages" t="Include">
           <e p="Error.cshtml" t="Include" />
@@ -77,25 +86,10 @@
         <e p="Startup.cs" t="Include" />
         <e p="Stop.Server.csproj" t="IncludeRecursive" />
         <e p="Websocket.cs" t="Include" />
-        <e p="appsettings.Development.json" t="Include" />
-        <e p="appsettings.json" t="Include" />
-        <e p="bin" t="ExcludeRecursive" />
-        <e p="obj" t="ExcludeRecursive">
-          <e p="Debug" t="Include">
-            <e p="netcoreapp3.1" t="Include">
-              <e p="Stop.Server.AssemblyInfo.cs" t="Include" />
-              <e p="Stop.Server.RazorAssemblyInfo.cs" t="Include" />
-            </e>
-          </e>
-        </e>
       </e>
       <e p="Shared" t="IncludeRecursive">
-        <e p="Game.cs" t="Include" />
-        <e p="Player.cs" t="Include" />
-        <e p="Round.cs" t="Include" />
-        <e p="Stop.Shared.csproj" t="IncludeRecursive" />
-        <e p="WeatherForecast.cs" t="Include" />
         <e p="bin" t="ExcludeRecursive" />
+        <e p="Game.cs" t="Include" />
         <e p="obj" t="ExcludeRecursive">
           <e p="Debug" t="Include">
             <e p="netstandard2.1" t="Include">
@@ -103,9 +97,14 @@
             </e>
           </e>
         </e>
+        <e p="Player.cs" t="Include" />
+        <e p="Round.cs" t="Include" />
+        <e p="Stop.Shared.csproj" t="IncludeRecursive" />
       </e>
       <e p="Stop.sln" t="IncludeFlat" />
-      <e p="packages" t="ExcludeRecursive" />
     </e>
+    <e p="C:\Users\tial\AppData\local\JetBrains\Rider2020.1\extResources" t="IncludeRecursive" />
+    <e p="C:\Users\tial\AppData\local\JetBrains\Rider2020.1\resharper-host\local\Transient\ReSharperHost\v201\SolutionCaches\_Stop.1909722798.00" t="ExcludeRecursive" />
+    <e p="C:\Users\tial\AppData\Roaming\JetBrains\Rider2020.1\extensions" t="IncludeRecursive" />
   </component>
 </project>

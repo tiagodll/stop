@@ -1,48 +1,92 @@
-@page "/game/{gameId:string}"
+@page "/game/{gameId}"
 @using Stop.Shared
+@inject NavigationManager NavigationManager
+@using Microsoft.AspNetCore.SignalR.Client
 @inject HttpClient Http
+@using Microsoft.AspNetCore.WebUtilities
 
 <h1>Weather forecast</h1>
 
 <p>This component demonstrates fetching data from the server.</p>
 
-@if (gameId == null)
+@if (CurrentGame == null)
 {
-    <p><em>Loading...</em></p>
+    <p><label>Join game: <input type="text" class="editable" @bind="gameId" /></label></p>
+    <p><label>Password: <input type="text" class="editable" @bind="password" /></label></p>
+    <p><label>Player name: <input type="text" class="editable" @bind="player.Name" /></label></p>
+    <button class="btn btn-primary" @onclick="JoinGame">Join</button>
 }
 else
 {
     <table class="table">
         <thead>
             <tr>
-                <th>Date</th>
-                <th>Temp. (C)</th>
-                <th>Temp. (F)</th>
-                <th>Summary</th>
+                <th>Topic</th>
+                <th>Your Answer</th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var forecast in forecasts)
+            @foreach (var topic in CurrentGame.Topics)
             {
                 <tr>
-                    <td>@forecast.Date.ToShortDateString()</td>
-                    <td>@forecast.TemperatureC</td>
-                    <td>@forecast.TemperatureF</td>
-                    <td>@forecast.Summary</td>
+                    <td>@topic</td>
+                    <td></td>
                 </tr>
             }
         </tbody>
     </table>
 }
 
+@if (!string.IsNullOrWhiteSpace(Alert))
+{
+    var alert_msg = Alert.Contains(":") ? Alert.Substring(Alert.IndexOf(":") + 1) : Alert;
+    var alert_type = Alert.Contains(":") ? Alert.Substring(0, Alert.IndexOf(":")) : "ERROR";
+    <div class="@alert_type">@alert_msg</div>
+}
+
 @code {
     [Parameter]
     public string gameId { get; set; }
-    public Game Game { get; set; }
-
+    public string password { get; set; }
+    public string Alert { get; set; }
+    
+    public Stop.Shared.Player player { get; set; }
+    public Stop.Shared.Game CurrentGame { get; set; }
+    public List<string> Answers { get; set; }
+    private HubConnection hubConnection;
+    
+    public bool IsConnected => hubConnection.State == HubConnectionState.Connected;
+    public void Dispose() => _ = hubConnection.DisposeAsync();
     protected override async Task OnInitializedAsync()
     {
-        Game = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
+        Answers = new List<string>();
+        player = new Player();
+        if (QueryHelpers.ParseQuery(new Uri(NavigationManager.Uri).Query).TryGetValue("password", out var value))
+        {
+            password = value;
+        }
+        
+        hubConnection = new HubConnectionBuilder().WithUrl(NavigationManager.ToAbsoluteUri("/websocket")).Build();
+        hubConnection.On<Stop.Shared.Game>("GameLoaded", (game) =>
+        {
+            if (game == null)
+            {
+                Alert += $"Game '{gameId}' not found";
+            }
+            else
+            {
+                CurrentGame = game;
+                StateHasChanged();
+            }
+        });
+        
+        await hubConnection.StartAsync();
     }
+
+    private async void JoinGame()
+    {
+        await hubConnection.InvokeAsync("JoinGame", gameId, password, player);
+    }
+
 
 }
