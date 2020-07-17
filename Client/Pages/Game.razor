@@ -10,6 +10,8 @@
 @inject HttpClient Http
 @using Microsoft.AspNetCore.WebUtilities
 @inject Blazored.LocalStorage.ILocalStorageService localStore
+@using Microsoft.Extensions.Logging
+@inject ILogger<Stop.Shared.Game> Logger
 
 @if (CurrentGame == null)
 {
@@ -20,11 +22,35 @@
 }
 else if (CurrentGame.Rounds.Count == 0)
 {
-    <p>waiting for game to start</p>
+    <p>waiting for round to start</p>
     <p><label>Player name: <input type="text" class="editable" @bind="Renamed" /></label></p>
     <button class="btn btn-primary" @onclick="RenamePlayer">Rename</button>
 }
-else if (CurrentGame.Rounds.Last().Finished == true)
+else if (CurrentGame.Rounds.Last().Finished == false)
+{
+    <h1>Current Letter: <b>@CurrentGame.Rounds.Last().Letter</b></h1>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Topic</th>
+            <th>Your Answer</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var topic in CurrentGame.Topics)
+        {
+            <tr>
+                <td>@topic</td>
+                <td><input type="text" class="editable" @onchange="@(e => ChangeAnswer(e, topic))" /></td>
+                <td>@Answers[@topic]</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    <button class="btn btn-primary" @onclick="FinishRound">Done!</button>
+}
+else
 {
     <h1>Round finished. Letter: <b>@CurrentGame.Rounds.Last().Letter</b></h1>
     <table>
@@ -51,30 +77,6 @@ else if (CurrentGame.Rounds.Last().Finished == true)
         </tbody>
     </table>
 }
-else
-{
-    <h1>Current Letter: <b>@CurrentGame.Rounds.Last().Letter</b></h1>
-    <table class="table">
-        <thead>
-        <tr>
-            <th>Topic</th>
-            <th>Your Answer</th>
-            <th></th>
-        </tr>
-        </thead>
-        <tbody>
-        @foreach (var topic in CurrentGame.Topics)
-        {
-            <tr>
-                <td>@topic</td>
-                <td><input type="text" class="editable" @onchange="@(e => ChangeAnswer(e, topic))" /></td>
-                <td>@Answers[@topic].Answer</td>
-            </tr>
-        }
-        </tbody>
-    </table>
-    <button class="btn btn-primary" @onclick="FinishRound">Done!</button>
-}
 
 @if (!string.IsNullOrWhiteSpace(Alert))
 {
@@ -93,18 +95,21 @@ else
     
     public Stop.Shared.Player player { get; set; } = new Player();
     public Stop.Shared.Game CurrentGame { get; set; }
-    public Dictionary<string, RoundAnswer> Answers { get; set; } = new Dictionary<string, RoundAnswer>();
+    public Dictionary<string, string> Answers { get; set; } = new Dictionary<string, string>();
     private HubConnection hubConnection;
     
     public bool IsConnected => hubConnection.State == HubConnectionState.Connected;
     public void Dispose() => _ = hubConnection.DisposeAsync();
     protected override async Task OnInitializedAsync()
     {
+        // Logger.LogTrace("Init", 0);
         player.Name = await localStore.GetItemAsync<string>("player_name");
         if (QueryHelpers.ParseQuery(new Uri(NavigationManager.Uri).Query).TryGetValue("password", out var value))
         {
             password = value;
         }
+        
+        // Logger.LogTrace("Init", 1);
         
         hubConnection = new HubConnectionBuilder().WithUrl(NavigationManager.ToAbsoluteUri("/websocket")).Build();
         hubConnection.On<Stop.Shared.Game>("JoinedGame", (game) =>
@@ -116,20 +121,39 @@ else
             else
             {
                 CurrentGame = game;
-                foreach (var topic in CurrentGame.Topics)
-                    Answers.Add(topic, new RoundAnswer(""));
-
+                Answers = new Dictionary<string, string>();
+                foreach (var topic in game.Topics)
+                {
+                    Answers.Add(topic, "");
+                    
+                    // Answers.Add(topic, game.Rounds[game.Rounds.Count-1].Players[player.Name].Answers[topic].Answer);
+                }
+                Console.WriteLine($"Joined game: {CurrentGame.Id}");
                 StateHasChanged();
             }
         });
         hubConnection.On<Stop.Shared.Game>("GameLoaded", (game) =>
         {
+            Console.WriteLine($"Game loaded: {game.Id}");
             CurrentGame = game;
+            StateHasChanged();
+        });
+        hubConnection.On<Stop.Shared.Round>("RoundEnded", (round) =>
+        {
+            Console.WriteLine("RoundEnded");
+            CurrentGame.Rounds[CurrentGame.Rounds.Count - 1] = round;
             StateHasChanged();
         });
         hubConnection.On<Stop.Shared.Game>("RoundStarted", (game) =>
         {
+            Console.WriteLine($"Round Started: {game.Rounds.Last().Letter}");
             CurrentGame = game;
+            Answers = new Dictionary<string, string>();
+            foreach (var topic in game.Topics)
+            {
+                Answers.Add(topic, "");
+            }
+            //Answers = CurrentGame.Rounds.Last().Players[player.Name].Answers;
             StateHasChanged();
         });
         hubConnection.On<Stop.Shared.Game>("GameDeleted", (game) =>
@@ -146,12 +170,14 @@ else
 
     private async void ChangeAnswer(ChangeEventArgs e, string topic)
     {
-        Answers[topic].Answer = e.Value.ToString();
-        await hubConnection.InvokeAsync("SaveAnswers", gameId, password, player, Answers);
+        Answers[topic] = e.Value.ToString();
+        Console.WriteLine($"Change answer: [{topic}] {Answers[topic]}");
+        await hubConnection.InvokeAsync("SaveAnswers", gameId, player.Name, topic, Answers[topic]);
     }
 
     private async void JoinGame()
     {
+        Console.WriteLine($"Join game: {gameId}");
         Renamed = player.Name;
         await localStore.SetItemAsync<string>("player_name", player.Name);
         await hubConnection.InvokeAsync("JoinGame", gameId, password, player);
@@ -159,7 +185,8 @@ else
 
     private async void FinishRound()
     {
-        await hubConnection.InvokeAsync("FinishRound",CurrentGame.Id, player.Name);
+        Console.WriteLine($"Finish round: {player.Name}");
+        await hubConnection.InvokeAsync("CloseRound",CurrentGame.Id, player.Name);
     }
 
     private async void RenamePlayer()

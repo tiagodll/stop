@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,47 +10,71 @@ namespace Stop.Server
 {
     public class Websocket : Hub
     {
-        public IDatabaseService Db { get; set; }
+        private IDatabaseService Db { get; set; }
         public Websocket(IDatabaseService db) => Db = db;
-        public async Task SendMessage(string user, string message)
-        {
-            await Clients.All.SendAsync("ReceiveMessage", user, message);
-        }
+
         public async Task StartGame(List<string> topics){
             var game = new Game();
             game.Id = Nanoid.Nanoid.Generate(size:6);
-            game.Password = Nanoid.Nanoid.Generate(size:4);
+            game.Password = Nanoid.Nanoid.Generate(alphabet:"0123456789abcdefghijklmnopqrstuvxz", size:4);
             game.Topics = topics;
             Db.SaveGame(game);
             await Clients.All.SendAsync("GameStarted", game);
         }
-        
+
+        private string GetRandomLetter() => (char) ('a' + new Random().Next(0, 26)) + "";
         public async Task StartRound(string id){
             var game = Db.FetchGame(id);
-            var round = new Round();
-            round.Letter = (char)('a' + new Random().Next(0, 26)) + "";
+            var round = new Round { Letter = GetRandomLetter() };
+            // foreach (var player in game.Players)
+            // {
+            //     var rp = new RoundPlayer();
+            //     foreach (var topic in game.Topics)
+            //         rp.Answers.Add(topic, new RoundAnswer(""));
+            //     
+            //     round.Players.Add(player.Name, rp);
+            // }
             game.Rounds.Add(round);
             Db.SaveGame(game);
             await Clients.All.SendAsync("RoundStarted", game);
         }
-        public async Task FinishRound(string id, string name){
+        
+        public async Task CloseRound(string id, string name){
+            Console.WriteLine($"FinishRound {id} by {name}");
             var game = Db.FetchGame(id);
-            game.Rounds.Last().Finished = true;
-            foreach (var player in game.Players)
-            {
-                foreach (var topic in game.Topics)
-                {
-                    if (game.Rounds.Last().Players[player.Name].Answers[topic].Answer.StartsWith(game.Rounds.Last().Letter))
-                    {
-                        game.Rounds.Last().Players[player.Name].Answers[topic].Score += IsAnswerUnique(id, name, topic) ? 2 : 1;
-                    }
-                }
-            }
-            Db.SaveGame(game);
-            await Clients.All.SendAsync("GameLoaded", game);
+            await Clients.All.SendAsync("RoundEnded", game.Rounds.Last());
         }
 
-        public bool IsAnswerUnique(string id, string name, string topic)
+        // public async Task FinishRound(string id, string name){
+        //     Console.WriteLine($"FinishRound {id} by {name}");
+        //     var game = Db.FetchGame(id);
+        //     
+        //     // await Clients.All.SendAsync("RoundFinished", game);
+        //     game.Rounds[game.Rounds.Count-1].Finished = true;
+        //     
+        //     foreach (var player in game.Players)
+        //     {
+        //         foreach (var topic in game.Topics)
+        //         {
+        //             if (game.Rounds[game.Rounds.Count-1].Players[player.Name].Answers[topic].Answer.StartsWith(game.Rounds.Last().Letter))
+        //             {
+        //                 game.Rounds[game.Rounds.Count-1].Players[player.Name].Answers[topic].Score += IsAnswerUnique(id, name, topic) ? 2 : 1;
+        //             }
+        //         }
+        //     }
+        //     Db.SaveGame(game);
+        //     try
+        //     {
+        //         Console.WriteLine("calling RoundFinished");
+        //         await Clients.All.SendAsync("RoundEnded", game);
+        //     }
+        //     catch (Exception e)
+        //     {
+        //         Console.WriteLine(e.Message);
+        //     }
+        // }
+
+        private bool IsAnswerUnique(string id, string name, string topic)
         {
             var game = Db.FetchGame(id);
             var answer = game.Rounds.Last().Players[name].Answers[topic];
@@ -91,15 +116,22 @@ namespace Stop.Server
             await Clients.All.SendAsync("GameDeleted", null);
         }
 
-        public async Task SaveAnswers(string id, string password, Player player, Dictionary<string, RoundAnswer> answers)
+        public async Task SaveAnswers(string id, string playerName, string topic, string answer)
         {
             var game = Db.FetchGame(id);
-            if(!game.Rounds.Last().Players.ContainsKey(player.Name))
-                game.Rounds.Last().Players.Add(player.Name, new RoundPlayer(){ Answers = answers });
+            if (!game.Players.Any(x => x.Name == playerName))
+                return;
+
+            if (!game.Rounds[game.Rounds.Count-1].Players.ContainsKey(playerName))
+                game.Rounds[game.Rounds.Count-1].Players.Add(playerName, new RoundPlayer());
+
+            if (!game.Rounds[game.Rounds.Count-1].Players[playerName].Answers.ContainsKey(topic))
+                game.Rounds[game.Rounds.Count-1].Players[playerName].Answers.Add(topic, new RoundAnswer(answer));
             else
-                game.Rounds.Last().Players[player.Name].Answers = answers;
-            
-            await Clients.All.SendAsync("GameLoaded", game);
+                game.Rounds[game.Rounds.Count-1].Players[playerName].Answers[topic].Answer = answer;
+
+            Db.SaveGame(game);
+            // await Clients.All.SendAsync("GameLoaded", game);
         }
 
         public async Task RenamePlayer(string id, string oldName, string newName)

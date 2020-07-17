@@ -25,18 +25,41 @@
         }
     </ul>
 
-    <button class="btn btn-primary" @onclick="StartGame">Start game</button>
+    <button class="btn btn-primary" @onclick="StartGame">Create game</button>
 }
-else
+else if (CurrentGame.Rounds.Count == 0)
 {
     var link = NavigationManager.ToAbsoluteUri($"/game/{CurrentGame.Id}?password={CurrentGame.Password}");
     
-    <h1>New game</h1>
+    <h1>Waiting for players to join</h1>
     <p><span>Url: @CurrentGame.Id</span><br>
         <span>Password: @CurrentGame.Password</span></p>
     <p>Link: <a href="@link">@link</a></p>
+     
+    <ul>
+    @foreach (var player in CurrentGame.Players)
+    {
+        <li>@player.Name</li>
+    }
+    </ul>
                                       
-                                      
+    <button class="btn btn-primary" @onclick="StartRound" disabled="@DisableStartButton">Start round</button>
+    <button class="btn btn-danger" @onclick="DeleteGame">Delete game</button>
+}
+else if (CurrentGame.Rounds.Last().Finished == false)
+{
+    <h1>Current Letter: <b>@CurrentGame.Rounds.Last().Letter</b></h1>
+    <label>Players:</label>
+    <ul>
+        @foreach (var player in CurrentGame.Players)
+        {
+            <li>@player.Name</li>
+        }
+    </ul>
+    <button class="btn btn-danger" @onclick="DeleteGame">Delete game</button>
+}
+else
+{
     <table>
         <thead>
         <th>Player</th>
@@ -47,9 +70,7 @@ else
         <th>score</th>
         </thead>
         <tbody>
-        @if (CurrentGame.Rounds.Count > 0)
-        {
-            foreach (var roundPlayer in CurrentGame.Rounds.Last().Players)
+            @foreach (var roundPlayer in CurrentGame.Rounds.Last().Players)
             {
                 <tr>
                     <td>@roundPlayer.Key</td>
@@ -63,21 +84,6 @@ else
                     <td>@roundPlayer.Value.Score</td>
                 </tr>
             }
-        }
-        else
-        {
-            foreach (var player in CurrentGame.Players)
-            {
-                <tr>
-                    <td>@player.Name</td>
-                    @foreach (var topic in CurrentGame.Topics)
-                    {
-                        <td></td>
-                    }
-                </tr>
-            }
-        }
-        
         </tbody>
     </table>
     
@@ -104,6 +110,10 @@ else
             await localStore.SetItemAsync<string>("game_password", CurrentGame.Password);
             StateHasChanged();
         });
+        hubConnection.On<Stop.Shared.Game>("aaa", (game) =>
+        {
+            Console.WriteLine("aaa");
+        });
         hubConnection.On<Stop.Shared.Game>("GameLoaded", (game) =>
         {
             CurrentGame = game;
@@ -112,6 +122,13 @@ else
         hubConnection.On<Stop.Shared.Game>("RoundStarted", (game) =>
         {
             CurrentGame = game;
+            StateHasChanged();
+        });
+        hubConnection.On<Stop.Shared.Round>("RoundEnded", (round) =>
+        {
+            Console.WriteLine("RoundEnded");
+            // CurrentGame = game;
+            // Console.WriteLine($"Round finished: {game.Rounds.Last().Letter}");
             StateHasChanged();
         });
         hubConnection.On<Stop.Shared.Game>("JoinedGame", (game) =>
@@ -142,6 +159,8 @@ else
     {
         _ = hubConnection.DisposeAsync();
     }
+
+    public bool DisableStartButton => CurrentGame.Players.Count < 2;
 
     private void AddTopic()
     {
