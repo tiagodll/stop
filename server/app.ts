@@ -8,6 +8,7 @@ import {
 import { Application, send } from "https://deno.land/x/oak/mod.ts"
 //import { mongo } from "./mongo.ts"
 import { CttsRouter } from "./router.ts"
+import { SocketServer } from "https://deno.land/x/sockets@master/mod.ts";
 
 //const db = mongo("mongodb://localhost:27017");
 const db = {};
@@ -48,4 +49,4 @@ app.addEventListener("listen", ({ hostname, port }) => {
   );
 });
 
-await app.listen({ hostname: "localhost", port: 8000 });
+await app.listen({ hostname: "192.168.0.1", port: 8000 });
