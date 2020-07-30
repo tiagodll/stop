@@ -1,4 +1,4 @@
-import { Application, Router, send } from "https://deno.land/x/oak/mod.ts";
+import { Application, Router, send, Status } from "https://deno.land/x/oak/mod.ts";
 import nanoid from "https://deno.land/x/nanoid/mod.ts";
 import * as db from "./db.ts";
 
@@ -7,19 +7,21 @@ export function TheRouter() {
   // const db = sqlite.connect(connection_string);
   router
     .post("/api/create_game", async (ctx) => {
-      // let {
-      //   value: { topics }
-      // } = await ctx.request.body();
+      if (!ctx.request.hasBody) {
+        ctx.throw(Status.BadRequest, "Bad Request");
+      }
 
-      // let game = {
-      //   id: nanoid(6),
-      //   password: nanoid(4),
-      //   topics: topics
-      // }
+      const params = JSON.parse(await (await ctx.request.body()).value || "");
+      console.log(params);
 
-      // const {
-      //   value: { email, password },
-      // } = await ctx.request.body();
+      let game = {
+        id: nanoid(6),
+        password: nanoid(4),
+        host: params.player,
+        topics: params.topics
+      }
+      
+      ctx.response.body = game;
 
       // console.log(email, password);
 

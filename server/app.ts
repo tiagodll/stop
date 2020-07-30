@@ -3,7 +3,7 @@ import { Application, send } from "https://deno.land/x/oak/mod.ts";
 import * as db from "./db.ts";
 import { TheRouter } from "./router.ts";
 import { SocketServer } from "https://deno.land/x/sockets@master/mod.ts";
-
+import { oakCors } from "https://deno.land/x/cors/mod.ts";
 
   db.create("./db.db");
   const router = TheRouter();
@@ -27,6 +27,7 @@ import { SocketServer } from "https://deno.land/x/sockets@master/mod.ts";
     ctx.response.headers.set("X-Response-Time", `${ms}ms`);
   });
 
+  app.use(oakCors({ origin: /^.+localhost:(3000|5000)$/ }));//{ origin: /^.+localhost:(5000|3000)$/, optionsSuccessStatus: 200 }));
   app.use(router.routes());
   app.use(router.allowedMethods());
 
