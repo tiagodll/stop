@@ -1,40 +1,37 @@
-// import { Sqlite } from "https://deno.land/x/sqlite_plugin@v0.4/src/prepared.ts";
-// import { Sqlite } from "https://deno.land/x/sqlite_plugin@v0.4/src/mod.ts";
-// Deno.openPlugin("./libdeno_sqlite_plugin.so");
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
+import { config } from "https://deno.land/x/dotenv/mod.ts";
 
-export async function connect(connection_string: string) {
-  const db = new DB(connection_string);
-  //   const sqlite = new Sqlite();
-  //   const db = await sqlite.connect(connection_string);
-  db.query(`
-    CREATE TABLE IF NOT EXISTS games (
-      id TEXT,
-      password TEXT,
-      player TEXT,
-      topics TEXT,
-      letter TEXT,
-      timestamp DATETIME
-    )`);
-  db.query(`
-    CREATE TABLE IF NOT EXISTS players (
-      game_id TEXT,
-      name TEXT
-    )`);
-  db.query(`
-    CREATE TABLE IF NOT EXISTS rounds (
-      game_id TEXT,
-      player TEXT,
-      answers TEXT,
-      score INTEGER
-    )`);
+const db = new DB(config().CONNECTION_STRING);
 
-  createGame(db, "asd");
+export default db;
 
-  return db;
+export async function create(connection_string: string) {
+  db.query(`
+      CREATE TABLE IF NOT EXISTS games (
+        id TEXT,
+        password TEXT,
+        player TEXT,
+        topics TEXT,
+        letter TEXT,
+        timestamp DATETIME
+      )`);
+  db.query(`
+      CREATE TABLE IF NOT EXISTS players (
+        game_id TEXT,
+        name TEXT
+      )`);
+  db.query(`
+      CREATE TABLE IF NOT EXISTS rounds (
+        game_id TEXT,
+        player TEXT,
+        answers TEXT,
+        score INTEGER
+      )`);
+
+  createGame("asd");
 }
 
-export async function createGame(db: any, id: string) {
+export async function createGame(id: string) {
   return await db.query(
     `
       INSERT INTO games (id, password, player, topics, letter, timestamp)
@@ -44,10 +41,8 @@ export async function createGame(db: any, id: string) {
   );
 }
 
-export async function fetchGame(connection_string: string, game_id: string) {
-  console.log(connection_string)
-  const db = new DB(connection_string);
-
+export async function fetchGame(game_id: string) {
+  console.log("rows");
   const rows = [
     ...db.query("SELECT * FROM games WHERE id=?", [game_id]).asObjects(),
   ];
@@ -55,8 +50,8 @@ export async function fetchGame(connection_string: string, game_id: string) {
   return rows;
 }
 
-export async function fetchLastRound(connection_string: string, id: string) {
-  const db = new DB(connection_string);
+export async function fetchLastRound(id: string) {
+  // const db = new DB(connection_string);
   for (const arr of db.query("SELECT * FROM games WHERE id=?", [id])) {
     console.log(arr);
     return arr;

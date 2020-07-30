@@ -1,12 +1,12 @@
 import * as colors from "https://deno.land/std@0.56.0/fmt/colors.ts";
 import { Application, send } from "https://deno.land/x/oak/mod.ts";
-import * as sqlite from "./db.ts";
+import * as db from "./db.ts";
 import { TheRouter } from "./router.ts";
 import { SocketServer } from "https://deno.land/x/sockets@master/mod.ts";
 
-try {
-  const db = "./db.db"// sqlite.connect("./db.db");
-  const router = TheRouter(db);
+
+  db.create("./db.db");
+  const router = TheRouter();
 
   const app = new Application({
     keys: ["- The super duper awesome secret! -"],
@@ -44,6 +44,3 @@ try {
   });
 
   await app.listen({ hostname: "127.0.0.1", port: 3000 });
-} catch (e) {
-  console.log(e);
-}
