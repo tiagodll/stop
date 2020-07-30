@@ -1,7 +1,8 @@
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
 import { config } from "https://deno.land/x/dotenv/mod.ts";
+import "https://deno.land/x/dotenv/load.ts";
 
-const db = new DB(config().CONNECTION_STRING);
+const db = new DB(Deno.env.get("CONNECTION_STRING"));
 
 export default db;
 
