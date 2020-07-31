@@ -1,8 +1,10 @@
-import { Application, Router, send, Status } from "https://deno.land/x/oak/mod.ts";
+import { Application, Context, isHttpError, Router, ServerSentEvent, Status, ServerSentEventTarget, } from "https://deno.land/x/oak/mod.ts";
+import * as colors from "https://deno.land/std@0.56.0/fmt/colors.ts";
 import nanoid from "https://deno.land/x/nanoid/mod.ts";
 import * as db from "./db.ts";
 
 export function TheRouter() {
+  let sse : ServerSentEventTarget;
   const router = new Router();
   // const db = sqlite.connect(connection_string);
   router
@@ -20,6 +22,10 @@ export function TheRouter() {
         host: params.player,
         topics: params.topics
       }
+
+      let counter = 0;
+      const evt = new ServerSentEvent("message", { hello: "world" }, { id: counter++ });
+      sse.dispatchEvent(evt);
       
       ctx.response.body = game;
 
@@ -49,6 +55,34 @@ export function TheRouter() {
     })
     .get("/ping", async (ctx) => {
       ctx.response.body = "pong";
+    })
+    .get("/sse", (ctx: Context) => {
+      // ctx.assert(
+      //   ctx.request.accepts("text/event-stream"),
+      //   Status.UnsupportedMediaType,
+      // );
+      ctx.request.accepts("text/event-stream")
+      ctx.response.headers.set("Content-Type", "text/event-stream");
+      ctx.response.headers.set('Access-Control-Allow-Origin', "*");
+
+      const connection = `${
+        (ctx.request.serverRequest.conn.remoteAddr as Deno.NetAddr).hostname
+      }:${(ctx.request.serverRequest.conn.remoteAddr as Deno.NetAddr).port}`;
+      console.log(connection)
+      
+      const sse = ctx.sendEvents();
+      console.log(`${colors.green("SSE connect")} ${colors.cyan(connection)}`);
+      
+      let counter = 0;      
+      const id = setInterval(() => {
+        const evt = new ServerSentEvent("message", { hello: "world" }, { id: counter++ });
+        sse.dispatchEvent(evt);
+      }, 2000);
+
+      sse.addEventListener("close", () => {
+        console.log(`${colors.green("SSE disconnect")} ${colors.cyan(connection)}`);
+        clearInterval(id);
+      });
     });
   return router;
 }

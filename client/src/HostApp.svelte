@@ -27,7 +27,7 @@
         document.getElementById("selected_topic").focus();
     }
     function startGameClicked() {
-        let res = fetch('http://localhost:3000/api/create_game', {
+        let res = fetch(`${SERVER}/api/create_game`, {
             method: 'POST',
             body: JSON.stringify({
                 player: player,
@@ -36,12 +36,22 @@
         })
         .then((r) => r.json())
         .then((result) => {
-            console.log('Success:', result);
+            game = result;
+            game_id = game.id;
         })
         .catch((error) => {
             console.error('Error:', error);
         });
     }
+
+    const ul = document.getElementById("events");
+    const sse = new EventSource(`${SERVER}/sse`, { withCredentials: true });
+    sse.onmessage = (evt) => {
+        console.log(evt)
+        const li = document.createElement("li");
+        li.textContent = `message: ${evt.data}`;
+        ul.appendChild(li);
+    };
 
     // const socket = new EventSource("/sse");
     // socket.addEventListener("ping", (evt) => {
@@ -60,7 +70,7 @@
 <main>
     {#if game == null && isNullOrWhitespace(game_id)}
         <h1>Create new game</h1>
-        <input id="host_player_name" autofocus type="text" bind:value={player} placeholder="enter your name">
+        <input id="host_player_name" type="text" bind:value={player} placeholder="enter your name">
         <br>
         <input id="selected_topic" type="text" bind:value={selected_topic} placeholder="enter your name">
         <button on:click={newTopicClicked}>add topic</button>
@@ -78,6 +88,8 @@
     {:else}
         <h1>Hello {player}, welcome to the game {game_id}!</h1>
     {/if}
+
+    <ul id="events"></ul>
 </main>
 
 <style>
