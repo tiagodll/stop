@@ -6,7 +6,8 @@ import { SocketServer } from "https://deno.land/x/sockets@master/mod.ts";
 import { oakCors } from "https://deno.land/x/cors/mod.ts";
 
   db.create("./db.db");
-  const router = TheRouter();
+  let singleton:any[] = [];
+  const router = TheRouter(singleton);
 
   const app = new Application({
     keys: ["- The super duper awesome secret! -"],
@@ -33,7 +34,7 @@ import { oakCors } from "https://deno.land/x/cors/mod.ts";
 
   app.use(async (ctx) => {
     await send(ctx, ctx.request.url.pathname, {
-      root: `${Deno.cwd()}/../static`,
+      root: `${Deno.cwd()}/../client/public`,
       index: "index.html",
     });
   });

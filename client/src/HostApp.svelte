@@ -44,13 +44,12 @@
         });
     }
 
-    const ul = document.getElementById("events");
-    const sse = new EventSource(`${SERVER}/sse`, { withCredentials: true });
+    
+    const sse = new EventSource(`${SERVER}/sse/1234567`);//, { withCredentials: true });
     sse.onmessage = (evt) => {
-        console.log(evt)
         const li = document.createElement("li");
         li.textContent = `message: ${evt.data}`;
-        ul.appendChild(li);
+        document.getElementById("events").appendChild(li);
     };
 
     // const socket = new EventSource("/sse");
