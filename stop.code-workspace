@@ -1,14 +1,29 @@
 {
 	"folders": [
 		{
-			"path": "server"
+			"path": "Client"
 		},
 		{
-			"path": "client"
+			"path": "Server"
 		},
 		{
-			"path": "_dotnet"
+			"path": "Shared"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"files.exclude": {
+			"**/bin": true,
+			"**/obj": true
+		}
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"type": "blazorwasm",
+				"name": "Attach debugger to existing Blazor WebAssembly Application",
+				"request": "attach"
+			}
+		]
+	}
 }
