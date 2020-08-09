@@ -70,20 +70,20 @@ else
         <th>score</th>
         </thead>
         <tbody>
-            @foreach (var roundPlayer in CurrentGame.Rounds.Last().Players)
-            {
-                <tr>
-                    <td>@roundPlayer.Key</td>
-                    @foreach (var answer in @roundPlayer.Value.Answers)
-                    {
-                        <td>
-                            @answer.Value
-                            <input type="checkbox" />
-                        </td>
-                    }
-                    <td>@roundPlayer.Value.Score</td>
-                </tr>
-            }
+        @foreach (var answers in CurrentGame.Rounds.Last().Answers)
+        {
+            <tr>
+                <td>@answers.Key</td>
+                @foreach (var answer in answers.Value)
+                {
+                    <td>
+                        @answer
+                        <input type="checkbox"/>
+                    </td>
+                }
+                @* <td>@roundPlayer.Value.Score</td> *@
+            </tr>
+        }
         </tbody>
     </table>
     
@@ -109,10 +109,6 @@ else
             await localStore.SetItemAsync<string>("game_id", CurrentGame.Id);
             await localStore.SetItemAsync<string>("game_password", CurrentGame.Password);
             StateHasChanged();
-        });
-        hubConnection.On<Stop.Shared.Game>("aaa", (game) =>
-        {
-            Console.WriteLine("aaa");
         });
         hubConnection.On<Stop.Shared.Game>("GameLoaded", (game) =>
         {

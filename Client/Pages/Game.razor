@@ -1,9 +1,5 @@
-@page "/game/{gameId}"
-@using System
-@using System.Collections.Generic
+@page "/game/{GameId}"
 @using System.Linq
-@using System.Threading.Tasks
-@using Microsoft.AspNetCore.Components
 @using Stop.Shared
 @inject NavigationManager NavigationManager
 @using Microsoft.AspNetCore.SignalR.Client
@@ -13,22 +9,37 @@
 @using Microsoft.Extensions.Logging
 @inject ILogger<Stop.Shared.Game> Logger
 
-@if (CurrentGame == null)
+@if (!JoinedGame)
 {
-    <p><label>Join game: <input type="text" class="editable" @bind="gameId" /></label></p>
+    <p><label>Join game: <input type="text" class="editable" @bind="GameId" /></label></p>
     <p><label>Password: <input type="text" class="editable" @bind="password" /></label></p>
     <p><label>Player name: <input type="text" class="editable" @bind="player.Name" /></label></p>
     <button class="btn btn-primary" @onclick="JoinGame">Join</button>
 }
-else if (CurrentGame.Rounds.Count == 0)
+else if (Round == null)
 {
     <p>waiting for round to start</p>
     <p><label>Player name: <input type="text" class="editable" @bind="Renamed" /></label></p>
     <button class="btn btn-primary" @onclick="RenamePlayer">Rename</button>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Topics</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var topic in Topics)
+        {
+            <tr>
+                <td>@topic</td>
+            </tr>
+        }
+        </tbody>
+    </table>
 }
-else if (CurrentGame.Rounds.Last().Finished == false)
+else if (Round.Finished == false)
 {
-    <h1>Current Letter: <b>@CurrentGame.Rounds.Last().Letter</b></h1>
+    <h1>Current Letter: <b>@Round.Letter</b></h1>
     <table class="table">
         <thead>
         <tr>
@@ -38,7 +49,7 @@ else if (CurrentGame.Rounds.Last().Finished == false)
         </tr>
         </thead>
         <tbody>
-        @foreach (var topic in CurrentGame.Topics)
+        @foreach (var topic in Topics)
         {
             <tr>
                 <td>@topic</td>
@@ -52,26 +63,26 @@ else if (CurrentGame.Rounds.Last().Finished == false)
 }
 else
 {
-    <h1>Round finished. Letter: <b>@CurrentGame.Rounds.Last().Letter</b></h1>
+    <h1>Round finished. Letter: <b>@Round.Letter</b></h1>
     <table>
         <thead>
         <th>Player</th>
-        @foreach (var topic in CurrentGame.Topics)
+        @foreach (var topic in Topics)
         {
             <th>@topic</th>
         }
         <th>Score</th>
         </thead>
         <tbody>
-        @foreach (var player in CurrentGame.Rounds.Last().Players)
+        @foreach (var player in Players)
         {
             <tr>
-                <td>@player.Key</td>
-                @foreach (var answers in player.Value.Answers)
+                <td>@player</td>
+                @foreach (var answer in Round.Answers[player])
                 {
-                    <td>@answers.Value.Answer</td>
+                    <td>@answer</td>
                 }
-                <td>@player.Value.Score</td>
+                @* <td>@player.Value.Score</td> *@
             </tr>
         }
         </tbody>
@@ -87,14 +98,17 @@ else
 
 @code {
     [Parameter]
-    public string gameId { get; set; }
+    public string GameId { get; set; }
     public string password { get; set; }
     public string Alert { get; set; }
 
     public string Renamed { get; set; }
+    public bool JoinedGame { get; set; } = false;
     
     public Stop.Shared.Player player { get; set; } = new Player();
-    public Stop.Shared.Game CurrentGame { get; set; }
+    public List<string> Players { get; set; }
+    public List<string> Topics { get; set; }
+    public Stop.Shared.Round Round { get; set; }
     public Dictionary<string, string> Answers { get; set; } = new Dictionary<string, string>();
     private HubConnection hubConnection;
     
@@ -114,42 +128,38 @@ else
         hubConnection = new HubConnectionBuilder().WithUrl(NavigationManager.ToAbsoluteUri("/websocket")).Build();
         hubConnection.On<Stop.Shared.Game>("JoinedGame", (game) =>
         {
-            if (game == null)
+            if (game.Players.Last().Name == player.Name)
             {
-                Alert = $"Game '{gameId}' not found";
-            }
-            else
-            {
-                CurrentGame = game;
-                Answers = new Dictionary<string, string>();
+                GameId = game.Id;
+                Topics = game.Topics;
                 foreach (var topic in game.Topics)
                 {
                     Answers.Add(topic, "");
                     
-                    // Answers.Add(topic, game.Rounds[game.Rounds.Count-1].Players[player.Name].Answers[topic].Answer);
                 }
-                Console.WriteLine($"Joined game: {CurrentGame.Id}");
+                JoinedGame = true;
+                Console.WriteLine($"Joined game: {GameId}");
                 StateHasChanged();
             }
         });
-        hubConnection.On<Stop.Shared.Game>("GameLoaded", (game) =>
-        {
-            Console.WriteLine($"Game loaded: {game.Id}");
-            CurrentGame = game;
-            StateHasChanged();
-        });
+        // hubConnection.On<Stop.Shared.Game>("GameLoaded", (game) =>
+        // {
+        //     Console.WriteLine($"Game loaded: {game.Id}");
+        //     Topics = game.Topics;
+        //     StateHasChanged();
+        // });
         hubConnection.On<Stop.Shared.Round>("RoundEnded", (round) =>
         {
             Console.WriteLine("RoundEnded");
-            CurrentGame.Rounds[CurrentGame.Rounds.Count - 1] = round;
+            Round.Finished = true;
             StateHasChanged();
         });
-        hubConnection.On<Stop.Shared.Game>("RoundStarted", (game) =>
+        hubConnection.On<Stop.Shared.Round>("RoundStarted", (round) =>
         {
-            Console.WriteLine($"Round Started: {game.Rounds.Last().Letter}");
-            CurrentGame = game;
+            Console.WriteLine($"Round Started: {round.Letter}");
+            Round = round;
             Answers = new Dictionary<string, string>();
-            foreach (var topic in game.Topics)
+            foreach (var topic in Topics)
             {
                 Answers.Add(topic, "");
             }
@@ -158,13 +168,13 @@ else
         });
         hubConnection.On<Stop.Shared.Game>("GameDeleted", (game) =>
         {
-            CurrentGame = null;
+            GameId = null;
             StateHasChanged();
         });
 
         await hubConnection.StartAsync();
         
-        if(!string.IsNullOrWhiteSpace(gameId) && !string.IsNullOrWhiteSpace(password) && !string.IsNullOrWhiteSpace(player.Name))
+        if(!string.IsNullOrWhiteSpace(GameId) && !string.IsNullOrWhiteSpace(password) && !string.IsNullOrWhiteSpace(player.Name))
             JoinGame();
     }
 
@@ -172,26 +182,26 @@ else
     {
         Answers[topic] = e.Value.ToString();
         Console.WriteLine($"Change answer: [{topic}] {Answers[topic]}");
-        await hubConnection.InvokeAsync("SaveAnswers", gameId, player.Name, topic, Answers[topic]);
+        await hubConnection.InvokeAsync("SaveAnswers", GameId, player.Name, topic, Answers[topic]);
     }
 
     private async void JoinGame()
     {
-        Console.WriteLine($"Join game: {gameId}");
+        Console.WriteLine($"Join game: {GameId}");
         Renamed = player.Name;
         await localStore.SetItemAsync<string>("player_name", player.Name);
-        await hubConnection.InvokeAsync("JoinGame", gameId, password, player);
+        await hubConnection.InvokeAsync("JoinGame", GameId, password, player);
     }
 
     private async void FinishRound()
     {
         Console.WriteLine($"Finish round: {player.Name}");
-        await hubConnection.InvokeAsync("CloseRound",CurrentGame.Id, player.Name);
+        await hubConnection.InvokeAsync("CloseRound",GameId, player.Name);
     }
 
     private async void RenamePlayer()
     {
-        await hubConnection.InvokeAsync("RenamePlayer", CurrentGame.Id, player.Name, Renamed);
+        await hubConnection.InvokeAsync("RenamePlayer", GameId, player.Name, Renamed);
         await localStore.SetItemAsync<string>("player_name", Renamed);
     }
 
