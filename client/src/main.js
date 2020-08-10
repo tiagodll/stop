@@ -2,23 +2,29 @@ import PlayerApp from './PlayerApp.svelte';
 import HostApp from './HostApp.svelte';
 
 
+//var searchParams = new URLSearchParams(window.location.href.substr(window.location.href.indexOf("?")));
+var searchParams = new URLSearchParams(document.URL.substr(document.URL.indexOf("?")));
+let app;
 
-const app = new HostApp({
-	target: document.body,
-	props: {
-		game_id: getParameterByName('game_id'),
-		player: getParameterByName('player'),
-	}
-});
-
-function getParameterByName(name, url) {
-    if (!url) url = window.location.href;
-    name = name.replace(/[\[\]]/g, '\\$&');
-    var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
-        results = regex.exec(url);
-    if (!results) return null;
-    if (!results[2]) return '';
-    return decodeURIComponent(results[2].replace(/\+/g, ' '));
+if(window.location.href.indexOf("play?") > -1)
+{
+    const playerApp = new PlayerApp({
+        target: document.body,
+        props: {
+            game_id: searchParams.get('game_id'),
+            password: searchParams.get('password'),
+        }
+    });
+    app = playerApp;
+}else{
+    const appHost = new HostApp({
+        target: document.body,
+        props: {
+            game_id: searchParams.get('game_id'),
+            password: searchParams.get('password'),
+        }
+    });
+    app = appHost;
 }
 
 export default app;

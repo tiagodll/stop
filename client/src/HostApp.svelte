@@ -2,7 +2,10 @@
 
 <script>
     export let game_id, player;
-    let game = null, topics=[], selected_topic="";
+    let game = null, topics=[], players=[], selected_topic="";
+
+    var searchParams = new URLSearchParams(document.URL.substr(document.URL.indexOf("?")));
+    searchParams.get("id");
     
     function isNullOrWhitespace(str) {
         return str == undefined || str == null || str == ""
@@ -38,6 +41,7 @@
         .then((result) => {
             game = result;
             game_id = game.id;
+            localStorage.setItem("game_id", game.id);
         })
         .catch((error) => {
             console.error('Error:', error);
@@ -45,12 +49,12 @@
     }
 
     
-    const sse = new EventSource(`${SERVER}/sse/1234567`);//, { withCredentials: true });
-    sse.onmessage = (evt) => {
-        const li = document.createElement("li");
-        li.textContent = `message: ${evt.data}`;
-        document.getElementById("events").appendChild(li);
-    };
+    // const sse = new EventSource(`${SERVER}/sse/1234567`);//, { withCredentials: true });
+    // sse.onmessage = (evt) => {
+    //     const li = document.createElement("li");
+    //     li.textContent = `message: ${evt.data}`;
+    //     document.getElementById("events").appendChild(li);
+    // };
 
     // const socket = new EventSource("/sse");
     // socket.addEventListener("ping", (evt) => {
@@ -86,6 +90,7 @@
         <button on:click={joinGameClicked}>join game</button>
     {:else}
         <h1>Hello {player}, welcome to the game {game_id}!</h1>
+        <a href="http://localhost:3000/play?game_id={game_id}">http://localhost:3000/play?game_id={game_id}</a>
     {/if}
 
     <ul id="events"></ul>
