@@ -2,7 +2,7 @@
 	import { isNullOrWhitespace } from './helpers.js';
 	
     export let game_id, player;
-    let game = null, answers=[];
+    let game = null, answers=[], round=[];
 
     var searchParams = new URLSearchParams(document.URL.substr(document.URL.indexOf("?")));
 	game_id = searchParams.get("game_id");
@@ -23,11 +23,18 @@
             }
             else{
                 game = result;
-				answers = game.topics.map(_ => "")
+                answers = game.topics.map(_ => "")
+                if(game.letter.indexOf("_") > 0){
+                    loadRound(game);
+                }
             }
         })
         .catch((error) => { console.error('Error:', error) });
 	}
+
+    function letter(){
+        return game.letter.substring(0, game.letter.indexOf("_"))
+    }
     function joinGameClicked() {
         fetch(`${SERVER}/api/game/${game_id}/join?player=${player}`)
         .then((r) => r.json())
@@ -42,9 +49,40 @@
     function finishRoundClicked() {
         fetch(`${SERVER}/api/game/${game_id}/finish-round?player=${player}`)
         .then((r) => r.json())
-        .then((result) => { game = result })
+        .then((result) => { 
+            game = result;
+            loadRound(game);
+         })
         .catch((error) => { console.error('Error:', error) });
     }
+    function loadRound(game) {
+        fetch(`${SERVER}/api/game/${game_id}/round/${letter()}`)
+        .then((r) => r.json())
+        .then((result) => { 
+            round = result
+            for (let i = 0; i < round.length; i++) {
+                round[i].score = calculateScore(round[i].player);
+            }
+        })
+        .catch((error) => { console.error('Error:', error); return null });
+    }
+    function calculateScore(player) {
+        let pi = round.findIndex(x => x.player == player);
+        
+        return round[pi].answers.reduce((r, x) => {
+            if(isNullOrWhitespace(x))
+                return r;
+
+            let l = x[0].toUpperCase();
+            if(l == letter())
+                return r + 1;
+            if(l == "_")
+                return r - 1;
+            
+            return r;
+        }, 0);
+    }
+
     function saveAnswers(i, data) {
 		answers[i] = data;
 
@@ -94,8 +132,35 @@
         <br>
         <div class="to-right"><button class="nes-btn is-primary" on:click={finishRoundClicked}>finished</button></div>
 	{:else}
-		<h1>Round {game.letter} finished</h1>
-		?
+		<h1>Round {letter()} finished</h1>
+		<table class="nes-table is-bordered is-justified">
+            <thead>
+                <tr>
+                    <th>Player</th>
+                    {#each round as item }
+                        <th>{item.player}</th>
+                    {/each}
+                </tr>
+            </thead>
+            {#each game.topics as topic, i }
+                <tr>
+                <td class="topic">{topic}</td>
+                {#each round as item }
+                    <td class="answer" on:click={markAnswer(item.player, game.topics[i])}>
+                        {item.answers[i]}
+                    </td>
+                {/each}
+            </tr>
+            {/each}
+            <tfoot>
+                <tr>
+                    <td>Totals:</td>
+                    {#each round as item}
+                        <td>{item.score}</td>
+                    {/each}
+                </tr>
+            </tfoot>
+        </table>
     {/if}
 
     <ul id="events"></ul>
@@ -108,6 +173,22 @@
     }
     .to-right{ 
         text-align: right;
+    }
+    .is-justified{
+        width: 100%;
+        /* border-collapse:collapse; */
+    }
+
+    .nes-table th{
+        color: white;
+        background-color: darkblue;
+    }
+    .nes-table tfoot td{
+        color: white;
+        background-color: darkblue;
+    }
+    .nes-table td.topic{
+        background-color: teal;
     }
 
 

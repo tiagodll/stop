@@ -95,6 +95,9 @@
         let ti = game.topics.findIndex(x => x == topic);
 
         let ans = round[pi].answers[ti];
+        if(isNullOrWhitespace(ans))
+            return;
+
         round[pi].answers[ti] = ans[0] == "_" ? ans.substr(1): "_" + ans;
         round[pi].score = calculateScore(player);
     }
@@ -103,6 +106,9 @@
         let pi = round.findIndex(x => x.player == player);
         
         return round[pi].answers.reduce((r, x) => {
+            if(isNullOrWhitespace(x))
+                return r;
+
             let l = x[0].toUpperCase();
             if(l == letter())
                 return r + 1;
@@ -179,39 +185,41 @@
             {/each}
         </ul>
     {:else}
-        <h1 class="nes-text is-primary">Game {game.id}, results for round {letter()}</h1>
+        <h1 class="nes-text is-primary">Round {letter()} finished</h1>
         <!-- <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a> -->
         <br>
         <p>Round results:</p>
         <br>
-        <div class="">
-            <table class="nes-table is-bordered is-justified">
-                <thead>
-                    <tr>
-                        <th>Player</th>
-                        {#each round as item }
-                            <th>{item.player}</th>
-                        {/each}
-                    </tr>
-                </thead>
-                {#each game.topics as topic, i }
-                    <tr>
-                    <td>{topic}</td>
+        <table class="nes-table is-bordered is-justified">
+            <thead>
+                <tr>
+                    <th>Player</th>
                     {#each round as item }
-                        <td class="answer" on:click={markAnswer(item.player, game.topics[i])}>
-                            {item.answers[i]}
-                        </td>
+                        <th>{item.player}</th>
                     {/each}
                 </tr>
+            </thead>
+            <tbody>
+            {#each game.topics as topic, i }
+                <tr>
+                <td class="topic">{topic}</td>
+                {#each round as item }
+                    <td class="answer" on:click={markAnswer(item.player, game.topics[i])}>
+                        {item.answers[i]}
+                    </td>
                 {/each}
+            </tr>
+            {/each}
+            </tbody>
+            <tfoot>
                 <tr>
                     <td>Totals:</td>
                     {#each round as item}
                         <td>{item.score}</td>
                     {/each}
                 </tr>
-            </table>
-        </div>
+            </tfoot>
+        </table>
         <br>
         <div class="to-right"><button class="nes-btn is-primary" on:click={nextRoundClicked}>start next round</button></div>
     {/if}
@@ -229,7 +237,7 @@
     }
     .is-justified{
         width: 100%;
-        border-collapse:collapse;
+        /* border-collapse:collapse; */
     }
     .nes-table td.unique{
         background-color: green;
@@ -240,6 +248,18 @@
     .nes-table td.answer:hover .i{
         display: inline-block;
     }
+    .nes-table th{
+        color: white;
+        background-color: darkblue;
+    }
+    .nes-table tfoot td{
+        color: white;
+        background-color: darkblue;
+    }
+    .nes-table td.topic{
+        background-color: teal;
+    }
+
 
 
 	/* @media (min-width: 640px) {
