@@ -9,14 +9,14 @@ export function TheRouter(sqlite : any) {
 
   const router = new Router();
   router
+  .get("/ping", async (ctx) => {
+    ctx.response.body = "pong";
+  })
   .get("/play", async (ctx) => {
     const file = await Deno.open(`../client/public/index.html`, {read: true});
     const myFileContent = await Deno.readAll(file);
     Deno.close(file.rid);
     ctx.response.body = myFileContent;
-  })
-  .get("/ping", async (ctx) => {
-    ctx.response.body = "pong";
   })
   .post("/api/create_game", async (ctx:Context) => {
     if (!ctx.request.hasBody) {
@@ -56,33 +56,51 @@ export function TheRouter(sqlite : any) {
     db.saveGame(game)
     ctx.response.body = game;
   })
-  .post("/api/game/:id/join", async (ctx) => {
-    if (ctx.params && ctx.params.id && ctx.params.player) {
-      console.log(`${ctx.params.player} has joined ${ctx.params.id}`)
+  .get("/api/game/:id/join", async (ctx) => {
+    console.log(ctx.params)
+    let player = ctx.request.url.searchParams.get("player");
+    console.log(player)
+    if (ctx.params && ctx.params.id && player) {
+      console.log(`${player} has joined ${ctx.params.id}`)
       const game = await db.fetchGame(ctx.params.id);
-      game.players.push(ctx.params.player);
+      game.players.push(player);
       db.saveGame(game)
 
       console.log(game);
       ctx.response.body = game;
     } else {
-      ctx.response.body = null;
+      notFound(ctx);
     }
   })
   .get("/api/game/:id", async (ctx) => {
     if (ctx.params && ctx.params.id) {
       const game = await db.fetchGame(ctx.params.id);
       console.log(game);
+      if(game == null)
+        notFound(ctx);
+      else
+        ctx.response.body = game;
+    } else {
+      notFound(ctx);
+    }
+  })
+  .post("/api/game/:id/next_round", async (ctx) => {
+    console.log(ctx.params)
+    if (ctx.params && ctx.params.id) {
+      const game = await db.fetchGame(ctx.params.id);
+      game.letter = String.fromCharCode(Math.ceil(Math.random() * 27) + 65);
+      db.saveGame(game)
+      console.log(game);
       ctx.response.body = game;
     } else {
-      ctx.response.body = null;
+      notFound(ctx);
     }
   })
   .get("/api/game/:id/round/:letter", async (ctx) => {
     if (ctx.params && ctx.params.id && ctx.params.letter) {
       ctx.response.body = await db.fetchRound(ctx.params.id, ctx.params.letter);
     } else {
-      ctx.response.body = null;
+      notFound(ctx);
     }
   })
   // .get("/sse/:thePort", (ctx: RouterContext) => {
@@ -123,4 +141,8 @@ export function TheRouter(sqlite : any) {
   //   });
   // });
   return router;
+}
+
+function notFound(ctx: Context) {
+  ctx.response.status = Status.NotFound;
 }

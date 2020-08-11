@@ -5,7 +5,27 @@
     let game = null, topics=[], players=[], answers=[], selected_topic="";
 
     var searchParams = new URLSearchParams(document.URL.substr(document.URL.indexOf("?")));
-    game_id = searchParams.get("game_id");
+	game_id = searchParams.get("game_id");
+	
+	if(!isNullOrWhitespace(localStorage.getItem("game_id")) && game_id == localStorage.getItem("game_id")){
+		console.log(`fetch: ${SERVER}/api/game/${game_id}?player=${player}`)
+        fetch(`${SERVER}/api/game/${game_id}?player=${player}`)
+        .then((r) => r.json())
+        .then((result) => {
+            console.log(result)
+            if(result == null || isNullOrWhitespace(result.id)){
+                localStorage.removeItem("game_id");
+                game_id = null;
+                game = null;
+            }
+            else{
+                game = result;
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
 
     if(!isNullOrWhitespace(localStorage.getItem("player"))){
         player = localStorage.getItem("player");
@@ -26,10 +46,7 @@
         return str == undefined || str == null || str == ""
     }
     function joinGameClicked() {
-        let res = fetch(`${SERVER}/api/game/${game_id}/join`, {
-            method: 'POST',
-            body: JSON.stringify({ player: player })
-        })
+        let res = fetch(`${SERVER}/api/game/${game_id}/join?player=${player}`)
         .then((r) => r.json())
         .then((result) => {
             game = result;

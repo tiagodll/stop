@@ -17,6 +17,7 @@ if(window.location.href.indexOf("play?") > -1)
     });
     app = playerApp;
 }else{
+// }else if(window.location.href.indexOf("play?") > -1){
     const appHost = new HostApp({
         target: document.body,
         props: {

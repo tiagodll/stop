@@ -48,12 +48,14 @@ export async function saveGame(game:IGame) {
 }
 
 export async function fetchGame(game_id: string) : IGame {
-  console.log("fetchGame", game_id);
-  const rows = [
-    ...db.query("SELECT * FROM games WHERE id=?", [game_id]).asObjects(),
-  ];
-  console.log(rows);
-  return rows;
+  let result = [...db.query("SELECT * FROM games WHERE id=?", [game_id]).asObjects()]
+    .map((x:any )=> {
+      x.players = x.players.split("|");
+      x.topics = x.topics.split("|");
+      return x;
+    });
+
+    return result.length>0 ? result[0] : null;
 }
 
 export async function savePlayerRound(round:IRound) {

@@ -9,7 +9,7 @@
 
     if(!isNullOrWhitespace(localStorage.getItem("game_id"))){
         game_id = localStorage.getItem("game_id");
-
+        console.log(`fetch: ${SERVER}/api/game/${game_id}?player=${player}`)
         fetch(`${SERVER}/api/game/${game_id}?player=${player}`)
         .then((r) => r.json())
         .then((result) => {
