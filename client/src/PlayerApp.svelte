@@ -2,7 +2,7 @@
 	import { isNullOrWhitespace } from './helpers.js';
 	
     export let game_id, player;
-    let game = null, answers=[], round=[];
+    let game = null, answers=[], round=[], scoreboard=[];
 
     var searchParams = new URLSearchParams(document.URL.substr(document.URL.indexOf("?")));
 	game_id = searchParams.get("game_id");
@@ -24,7 +24,7 @@
             else{
                 game = result;
                 answers = game.topics.map(_ => "")
-                if(game.letter.indexOf("_") > 0){
+                if(game.letter == "$" || game.letter.indexOf("_") > 0){
                     loadRound(game);
                 }
             }
@@ -32,9 +32,13 @@
         .catch((error) => { console.error('Error:', error) });
 	}
 
-    function letter(){
-        return game.letter.substring(0, game.letter.indexOf("_"))
+    function letter(game){
+        if(game.letter.indexOf("_") < 0)
+            return game.letter;
+        else
+            return game.letter.substring(0, game.letter.indexOf("_"))
     }
+
     function joinGameClicked() {
         fetch(`${SERVER}/api/game/${game_id}/join?player=${player}`)
         .then((r) => r.json())
@@ -56,12 +60,26 @@
         .catch((error) => { console.error('Error:', error) });
     }
     function loadRound(game) {
-        fetch(`${SERVER}/api/game/${game_id}/round/${letter()}`)
+        fetch(`${SERVER}/api/game/${game_id}/round/${letter(game)}`)
         .then((r) => r.json())
         .then((result) => { 
             round = result
-            for (let i = 0; i < round.length; i++) {
-                round[i].score = calculateScore(round[i].player);
+            if(game.letter == "$"){
+                scoreboard = [];
+                round.forEach(r => {
+                    if(scoreboard.findIndex(x => x.letter == r.letter) < 0)
+                        scoreboard.push({ letter: r.letter, scores: [] });
+                    
+                    let i = scoreboard.findIndex(x => x.letter == r.letter);
+                    scoreboard[i].scores.push({
+                        player: r.player,
+                        score: r.score
+                    }); 
+                });
+            }else{
+                for (let i = 0; i < round.length; i++) {
+                    round[i].score = calculateScore(round[i].player);
+                }
             }
         })
         .catch((error) => { console.error('Error:', error); return null });
@@ -74,7 +92,7 @@
                 return r;
 
             let l = x[0].toUpperCase();
-            if(l == letter())
+            if(l == letter(game))
                 return r + 1;
             if(l == "_")
                 return r - 1;
@@ -120,9 +138,45 @@
                 <li>{player}</li>
             {/each}
         </ul>
+    {:else if game.letter == "$"}
+        <h1 class="nes-text is-primary">Game {game.id} ended.</h1>
+        <p>Scoreboard:</p>
+        <table class="nes-table is-bordered is-justified">
+            <thead>
+                <tr>
+                    <th>Player</th>
+                    {#each game.players as player}
+                        <th>{player}</th>
+                    {/each}
+                </tr>
+            </thead>
+            <tbody>
+            {#each scoreboard as item}
+                <tr>
+                <td class="topic">{item.letter}</td>
+                {#each game.players as player}
+                    <td>{item.scores
+                        .filter(x => x.player == player)
+                        .map(x => x.score)}</td>
+                {/each}
+                </tr>
+            {/each}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td>Totals:</td>
+                    {#each game.players as player}
+                        <td>{scoreboard.reduce((r,x)=>{ 
+                            return r + x.scores.filter(x => x.player == player)[0].score
+                        }, 0)}</td>
+                    {/each}
+                </tr>
+            </tfoot>
+        </table>
+        
 	{:else if game.letter.indexOf("_") < 0}
-		<h1 class="nes-text is-primary">Round {game.letter}</h1>
-		<p>topics:</p>
+        <h1 class="nes-text is-primary">Round {game.letter}</h1>
+        <p>topics:</p>
         {#each answers as answer, i }
         <div class="nes-field is-inline">
             <label for="name_field">{game.topics[i]}</label>
@@ -131,8 +185,11 @@
         {/each}
         <br>
         <div class="to-right"><button class="nes-btn is-primary" on:click={finishRoundClicked}>finished</button></div>
-	{:else}
-		<h1>Round {letter()} finished</h1>
+    {:else}
+        <h1 class="nes-text is-primary">Round {letter(game)} finished</h1>
+        <br>
+        <p>Round results:</p>
+        <br>
 		<table class="nes-table is-bordered is-justified">
             <thead>
                 <tr>
@@ -142,16 +199,18 @@
                     {/each}
                 </tr>
             </thead>
+            <tbody>
             {#each game.topics as topic, i }
                 <tr>
-                <td class="topic">{topic}</td>
-                {#each round as item }
-                    <td class="answer" on:click={markAnswer(item.player, game.topics[i])}>
-                        {item.answers[i]}
-                    </td>
-                {/each}
-            </tr>
+                    <td class="topic">{topic}</td>
+                    {#each round as item }
+                        <td class="answer">
+                            {item.answers[i]}
+                        </td>
+                    {/each}
+                </tr>
             {/each}
+            </tbody>
             <tfoot>
                 <tr>
                     <td>Totals:</td>

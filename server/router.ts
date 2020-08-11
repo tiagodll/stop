@@ -33,12 +33,12 @@ export function TheRouter(sqlite : any) {
       topics: params.topics
     }
 
-    ctx.assert(ctx.request.accepts("text/event-stream"), Status.UnsupportedMediaType);
+    // ctx.assert(ctx.request.accepts("text/event-stream"), Status.UnsupportedMediaType);
     
-    const connection = `${
-      (ctx.request.serverRequest.conn.remoteAddr as Deno.NetAddr).hostname
-    }:${(ctx.request.serverRequest.conn.remoteAddr as Deno.NetAddr).port}`;
-    console.log(connection)
+    // const connection = `${
+    //   (ctx.request.serverRequest.conn.remoteAddr as Deno.NetAddr).hostname
+    // }:${(ctx.request.serverRequest.conn.remoteAddr as Deno.NetAddr).port}`;
+    // console.log(connection)
     
     // const sse = ctx.sendEvents();
     // console.log(`${colors.green("SSE create_game connect")} ${colors.cyan(connection)}`);
@@ -83,16 +83,39 @@ export function TheRouter(sqlite : any) {
       notFound(ctx);
     }
   })
-  .get("/api/game/:id/next-round", async (ctx) => {
-    console.log(ctx.params)
-    if (ctx.params && ctx.params.id) {
+  .post("/api/game/:id/end-game", async (ctx) => {
+    if (ctx.request.hasBody && ctx.params && ctx.params.id) {
+
+      const params = JSON.parse(await (await ctx.request.body()).value || "");
+      params.forEach((round:IRound) => {
+        db.saveRound(round);
+      });
+      console.log(params);
+
       const game = await db.fetchGame(ctx.params.id);
-      game.letter = String.fromCharCode(Math.ceil(Math.random() * 27) + 65);
+      game.letter = "$";
+      db.saveGame(game);
+      ctx.response.body = game;
+    }else{
+      ctx.throw(Status.BadRequest, "Bad Request");
+    }
+  })
+  .post("/api/game/:id/next-round", async (ctx) => {
+    if (ctx.request.hasBody && ctx.params && ctx.params.id) {
+
+      const params = JSON.parse(await (await ctx.request.body()).value || "");
+      params.forEach((round:IRound) => {
+        db.saveRound(round);
+      });
+      console.log(params);
+
+      const game = await db.fetchGame(ctx.params.id);
+      game.letter = String.fromCharCode(Math.ceil(Math.random() * 25) + 65);
       db.saveGame(game)
       console.log(game);
       ctx.response.body = game;
-    } else {
-      notFound(ctx);
+    }else{
+      ctx.throw(Status.BadRequest, "Bad Request");
     }
   })
   .get("/api/game/:id/finish-round", async (ctx) => {
@@ -117,15 +140,18 @@ export function TheRouter(sqlite : any) {
       letter: params.letter,
       player: params.player,
       answers: params.answers,
-      score: 0
+      score: params.score
     }
 
-    db.savePlayerRound(round)
+    db.saveRound(round)
     ctx.response.body = round;
   })
   .get("/api/game/:id/round/:letter", async (ctx) => {
     if (ctx.params && ctx.params.id && ctx.params.letter) {
-      ctx.response.body = await db.fetchRound(ctx.params.id, ctx.params.letter);
+      if(ctx.params.letter == "$")
+        ctx.response.body = await db.fetchAllRounds(ctx.params.id);
+      else
+        ctx.response.body = await db.fetchRound(ctx.params.id, ctx.params.letter);
     } else {
       notFound(ctx);
     }

@@ -2,7 +2,7 @@
     import { isNullOrWhitespace } from './helpers.js';
 
     export let game_id, player;
-    let game = null, topics=[], players=[], selected_topic="", round=[];
+    let game = null, topics=[], players=[], selected_topic="", round=[], scoreboard=[];
 
     if(!isNullOrWhitespace(localStorage.getItem("player")))
         player = localStorage.getItem("player");
@@ -20,7 +20,7 @@
             }
             else{
                 game = result;
-                if(game.letter.indexOf("_") > 0){
+                if(game.letter == "$" || game.letter.indexOf("_") > 0){
                     loadRound(game);
                 }
             }
@@ -28,17 +28,34 @@
         .catch((error) => { console.error('Error:', error) });
     }
 
-    function letter(){
-        return game.letter.substring(0, game.letter.indexOf("_"))
+    function letter(game){
+        if(game.letter.indexOf("_") < 0)
+            return game.letter;
+        else
+            return game.letter.substring(0, game.letter.indexOf("_"))
     }
 
     function loadRound(game) {
-        fetch(`${SERVER}/api/game/${game_id}/round/${letter()}`)
+        fetch(`${SERVER}/api/game/${game_id}/round/${letter(game)}`)
         .then((r) => r.json())
         .then((result) => { 
             round = result
-            for (let i = 0; i < round.length; i++) {
-                round[i].score = calculateScore(round[i].player);
+            if(game.letter == "$"){
+                scoreboard = [];
+                round.forEach(r => {
+                    if(scoreboard.findIndex(x => x.letter == r.letter) < 0)
+                        scoreboard.push({ letter: r.letter, scores: [] });
+                    
+                    let i = scoreboard.findIndex(x => x.letter == r.letter);
+                    scoreboard[i].scores.push({
+                        player: r.player,
+                        score: r.score
+                    }); 
+                });
+            }else{
+                for (let i = 0; i < round.length; i++) {
+                    round[i].score = calculateScore(round[i].player);
+                }
             }
         })
         .catch((error) => { console.error('Error:', error); return null });
@@ -79,13 +96,28 @@
     }
 
     function nextRoundClicked() {
-        fetch(`${SERVER}/api/game/${game.id}/next-round`)
+        fetch(`${SERVER}/api/game/${game.id}/next-round`, {
+            method: 'POST',
+            body: JSON.stringify(round)
+        })
         .then((r) => r.json())
         .then((result) => {
             game = result;
             game_id = game.id;
             localStorage.setItem("game_id", game.id);
             localStorage.setItem("player", player);
+        })
+        .catch((error) => { console.error('Error:', error) });
+    }
+    function endGameClicked(){
+        fetch(`${SERVER}/api/game/${game.id}/end-game`, {
+            method: 'POST',
+            body: JSON.stringify(round)
+        })
+        .then((r) => r.json())
+        .then((result) => {
+            game = result;
+            loadRound(game);
         })
         .catch((error) => { console.error('Error:', error) });
     }
@@ -100,6 +132,18 @@
 
         round[pi].answers[ti] = ans[0] == "_" ? ans.substr(1): "_" + ans;
         round[pi].score = calculateScore(player);
+        fetch(`${SERVER}/api/game/${game_id}/save-answers`, {
+            method: 'POST',
+            body: JSON.stringify({
+                ...round[pi]
+            })
+        })
+        .then((r) => r.json())
+        .then((result) => {
+            
+            //game = result;
+        })
+        .catch((error) => { console.error('Error:', error) });
     }
 
     function calculateScore(player) {
@@ -110,7 +154,7 @@
                 return r;
 
             let l = x[0].toUpperCase();
-            if(l == letter())
+            if(l == letter(game))
                 return r + 1;
             if(l == "_")
                 return r - 1;
@@ -163,6 +207,7 @@
             {/each}
         </ul>
         <button class="nes-btn" class:is-success="{topics.length>1}" disabled={topics.length<2} on:click={startGameClicked}>start game</button>
+        
     {:else if game.letter==null}
         <h1 class="nes-text is-primary">Hello {player}, welcome to the game {game.id}!</h1>
         <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a>
@@ -172,10 +217,46 @@
                 <li>{player}</li>
             {/each}
         </ul>
-        
-        <button on:click={nextRoundClicked}>begin round</button>
+        <button class="nes-btn is-success" on:click={nextRoundClicked}>begin round</button>
+
+    {:else if game.letter == "$"}
+        <h1 class="nes-text is-primary">Game {game.id} ended.</h1>
+        <p>Scoreboard:</p>
+        <table class="nes-table is-bordered is-justified">
+            <thead>
+                <tr>
+                    <th>Player</th>
+                    {#each game.players as player}
+                        <th>{player}</th>
+                    {/each}
+                </tr>
+            </thead>
+            <tbody>
+            {#each scoreboard as item}
+                <tr>
+                <td class="topic">{item.letter}</td>
+                {#each game.players as player}
+                    <td>{item.scores
+                        .filter(x => x.player == player)
+                        .map(x => x.score)}</td>
+                {/each}
+                </tr>
+            {/each}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td>Totals:</td>
+                    {#each game.players as player}
+                        <td>{scoreboard.reduce((r,x)=>{ 
+                            return r + x.scores.filter(x => x.player == player)[0].score
+                        }, 0)}</td>
+                    {/each}
+                </tr>
+            </tfoot>
+        </table>
+
     {:else if game.letter.indexOf("_") < 0}
-        <h1 class="nes-text is-primary">Game {game.id}, round {letter()}</h1>
+        <h1 class="nes-text is-primary">Game {game.id}, round {letter(game)}</h1>
         <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a>
         <br><br>
         <p>Current players:</p>
@@ -185,7 +266,7 @@
             {/each}
         </ul>
     {:else}
-        <h1 class="nes-text is-primary">Round {letter()} finished</h1>
+        <h1 class="nes-text is-primary">Round {letter(game)} finished</h1>
         <!-- <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a> -->
         <br>
         <p>Round results:</p>
@@ -208,7 +289,7 @@
                         {item.answers[i]}
                     </td>
                 {/each}
-            </tr>
+                </tr>
             {/each}
             </tbody>
             <tfoot>
@@ -221,7 +302,10 @@
             </tfoot>
         </table>
         <br>
-        <div class="to-right"><button class="nes-btn is-primary" on:click={nextRoundClicked}>start next round</button></div>
+        <div class="to-right">
+            <button class="nes-btn is-success" on:click={nextRoundClicked}>start next round</button>
+            <button class="nes-btn is-warning" on:click={endGameClicked}>finish game</button>
+        </div>
     {/if}
 
     <ul id="events"></ul>
