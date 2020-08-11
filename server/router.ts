@@ -29,7 +29,7 @@ export function TheRouter(sqlite : any) {
     let game : IGame = {
       id: nanoid(6),
       password: nanoid(4),
-      players: [params.player],
+      players: params.players,
       topics: params.topics
     }
 

@@ -2,16 +2,45 @@
 
 <script>
     export let game_id, player;
-    let game = null, topics=[], players=[], selected_topic="";
+    let game = null, topics=[], players=[], answers=[], selected_topic="";
 
     var searchParams = new URLSearchParams(document.URL.substr(document.URL.indexOf("?")));
-    searchParams.get("id");
+    game_id = searchParams.get("game_id");
+
+    if(!isNullOrWhitespace(localStorage.getItem("player"))){
+        player = localStorage.getItem("player");
+        fetch(`${SERVER}/api/game/${game_id}?player=${player}`)
+        .then((r) => r.json())
+        .then((result) => {
+            if(result == null || isNullOrWhitespace(result.id))
+                game = null;
+            else
+                game = result;
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
     
     function isNullOrWhitespace(str) {
         return str == undefined || str == null || str == ""
     }
     function joinGameClicked() {
-		game = "asd";
+        let res = fetch(`${SERVER}/api/game/${game_id}/join`, {
+            method: 'POST',
+            body: JSON.stringify({ player: player })
+        })
+        .then((r) => r.json())
+        .then((result) => {
+            game = result;
+            localStorage.setItem("game_id", game.id);
+            localStorage.setItem("player", player);
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+
+
     }
     function newTopicClicked() {
         if(isNullOrWhitespace(selected_topic)){
@@ -58,9 +87,26 @@
         <p>please sign in.</p>
         <input type="text" bind:value={player} placeholder="enter your name">
         <button on:click={joinGameClicked}>join game</button>
+    {:else if game != null && isNullOrWhitespace(game.letter)}
+        <h1>Hello {player}, welcome to the game {game.id}!</h1>
+        <p>Waiting round to start</p>
+        <p>Current players:</p>
+        <ul>
+            {#each players as player }
+                <li>{player}</li>
+            {/each}
+        </ul>
     {:else}
-        <h1>Hello {player}, welcome to the game {game_id}!</h1>
-        <a href="http://localhost:3000/{game_id}">http://localhost:3000/{game_id}</a>
+        <h1>Round {game.letter}</h1>
+        <p>Current players:</p>
+        <ul>
+            {#each topics as topic }
+                <li>
+                    {topic}
+                    <input type="text" bind:value={topic} />
+                </li>
+            {/each}
+        </ul>
     {/if}
 
     <ul id="events"></ul>

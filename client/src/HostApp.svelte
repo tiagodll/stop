@@ -4,14 +4,32 @@
     export let game_id, player;
     let game = null, topics=[], players=[], selected_topic="";
 
-    var searchParams = new URLSearchParams(document.URL.substr(document.URL.indexOf("?")));
-    searchParams.get("id");
+    if(!isNullOrWhitespace(localStorage.getItem("player")))
+        player = localStorage.getItem("player");
+
+    if(!isNullOrWhitespace(localStorage.getItem("game_id"))){
+        game_id = localStorage.getItem("game_id");
+
+        fetch(`${SERVER}/api/game/${game_id}?player=${player}`)
+        .then((r) => r.json())
+        .then((result) => {
+            console.log(result)
+            if(result == null || isNullOrWhitespace(result.id)){
+                localStorage.removeItem("game_id");
+                game_id = null;
+                game = null;
+            }
+            else{
+                game = result;
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
     
     function isNullOrWhitespace(str) {
         return str == undefined || str == null || str == ""
-    }
-    function joinGameClicked() {
-		game = "asd";
     }
     function newTopicClicked() {
         if(isNullOrWhitespace(selected_topic)){
@@ -33,7 +51,7 @@
         let res = fetch(`${SERVER}/api/create_game`, {
             method: 'POST',
             body: JSON.stringify({
-                player: player,
+                players: [player],
                 topics: topics,
             })
         })
@@ -42,6 +60,7 @@
             game = result;
             game_id = game.id;
             localStorage.setItem("game_id", game.id);
+            localStorage.setItem("player", player);
         })
         .catch((error) => {
             console.error('Error:', error);
@@ -71,11 +90,11 @@
 </script>
 
 <main>
-    {#if game == null && isNullOrWhitespace(game_id)}
+    {#if game == null}
         <h1>Create new game</h1>
         <input id="host_player_name" type="text" bind:value={player} placeholder="enter your name">
         <br>
-        <input id="selected_topic" type="text" bind:value={selected_topic} placeholder="enter your name">
+        <input id="selected_topic" type="text" bind:value={selected_topic} placeholder="topic">
         <button on:click={newTopicClicked}>add topic</button>
         <ul>
             {#each topics as topic }
@@ -83,14 +102,15 @@
             {/each}
         </ul>
         <button disabled={topics.length<2} on:click={startGameClicked}>start game</button>
-    {:else if game == null && !isNullOrWhitespace(game_id)}
-        <h1>Welcome to the game {game_id}!</h1>
-        <p>please sign in.</p>
-        <input type="text" bind:value={player} placeholder="enter your name">
-        <button on:click={joinGameClicked}>join game</button>
     {:else}
-        <h1>Hello {player}, welcome to the game {game_id}!</h1>
-        <a href="http://localhost:3000/play?game_id={game_id}">http://localhost:3000/play?game_id={game_id}</a>
+        <h1>Hello {player}, welcome to the game {game.id}!</h1>
+        <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a>
+        <p>Current players:</p>
+        <ul>
+            {#each game.players as player }
+                <li>{player}</li>
+            {/each}
+        </ul>
     {/if}
 
     <ul id="events"></ul>
