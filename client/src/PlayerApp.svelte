@@ -1,11 +1,12 @@
-<svelte:options immutable/>
-
 <script>
     export let game_id, player;
-    let game = null, topics=[], players=[], answers=[], selected_topic="";
+    let game = null, answers=[];
 
     var searchParams = new URLSearchParams(document.URL.substr(document.URL.indexOf("?")));
 	game_id = searchParams.get("game_id");
+
+	if(!isNullOrWhitespace(localStorage.getItem("player")))
+		player = localStorage.getItem("player");
 	
 	if(!isNullOrWhitespace(localStorage.getItem("game_id")) && game_id == localStorage.getItem("game_id")){
 		console.log(`fetch: ${SERVER}/api/game/${game_id}?player=${player}`)
@@ -16,32 +17,18 @@
             if(result == null || isNullOrWhitespace(result.id)){
                 localStorage.removeItem("game_id");
                 game_id = null;
-                game = null;
+				game = null;
             }
             else{
                 game = result;
+				answers = game.topics.map(_ => "")
             }
         })
         .catch((error) => {
             console.error('Error:', error);
         });
-    }
-
-    if(!isNullOrWhitespace(localStorage.getItem("player"))){
-        player = localStorage.getItem("player");
-        fetch(`${SERVER}/api/game/${game_id}?player=${player}`)
-        .then((r) => r.json())
-        .then((result) => {
-            if(result == null || isNullOrWhitespace(result.id))
-                game = null;
-            else
-                game = result;
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-        });
-    }
-    
+	}
+	
     function isNullOrWhitespace(str) {
         return str == undefined || str == null || str == ""
     }
@@ -52,54 +39,33 @@
             game = result;
             localStorage.setItem("game_id", game.id);
             localStorage.setItem("player", player);
+			answers = game.topics.map(_ => "")
         })
         .catch((error) => {
             console.error('Error:', error);
         });
-
-
+        return str == undefined || str == null || str == ""
     }
-    function newTopicClicked() {
-        if(isNullOrWhitespace(selected_topic)){
-            document.getElementById("selected_topic").focus();
-            return false;
-        }
-
-        // duplicate topics make no sense in the game
-        if(topics.find(e => e == selected_topic) != null){
-            document.getElementById("selected_topic").focus();
-            return false;
-        }
-        
-        topics = topics.concat(selected_topic);
-        selected_topic = "";
-        document.getElementById("selected_topic").focus();
-    }
-    function startGameClicked() {
-        let res = fetch(`${SERVER}/api/create_game`, {
-            method: 'POST',
-            body: JSON.stringify({
-                player: player,
-                topics: topics,
-            })
-        })
+    function finishRoundClicked() {
+        let res = fetch(`${SERVER}/api/game/${game_id}/finish_round?player=${player}`)
         .then((r) => r.json())
         .then((result) => {
             game = result;
-            game_id = game.id;
-            localStorage.setItem("game_id", game.id);
+            //answers = game.topics.map(_ => "")
         })
         .catch((error) => {
             console.error('Error:', error);
         });
+
+
     }
 
 </script>
 
 <main>
-    {#if game == null && isNullOrWhitespace(game_id)}
-        <h1>Invalid game id</h1>
-    {:else if game == null && !isNullOrWhitespace(game_id)}
+    {#if game == null}
+        <!-- <h1>Invalid game id</h1> -->
+    <!-- {:else if game == null} -->
         <h1>Welcome to the game {game_id}!</h1>
         <p>please sign in.</p>
         <input type="text" bind:value={player} placeholder="enter your name">
@@ -109,21 +75,26 @@
         <p>Waiting round to start</p>
         <p>Current players:</p>
         <ul>
-            {#each players as player }
+            {#each game.players as player }
                 <li>{player}</li>
             {/each}
         </ul>
-    {:else}
-        <h1>Round {game.letter}</h1>
-        <p>Current players:</p>
-        <ul>
-            {#each topics as topic }
-                <li>
-                    {topic}
-                    <input type="text" bind:value={topic} />
-                </li>
-            {/each}
-        </ul>
+	{:else if game.letter.indexOf("_") < 0}
+		<h1>Round {game.letter}</h1>
+		<p>topics:</p>
+		<ul>
+			{#each answers as answer, i }
+			<li>
+				{game.topics[i]}
+				<input type="text" bind:value={answer}  />
+				'{answer}'
+			</li>
+			{/each}
+		</ul>
+        <button on:click={finishRoundClicked}>finished</button>
+	{:else}
+		<h1>Round {game.letter} finished</h1>
+		?
     {/if}
 
     <ul id="events"></ul>

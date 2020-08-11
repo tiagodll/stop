@@ -59,7 +59,6 @@ export function TheRouter(sqlite : any) {
   .get("/api/game/:id/join", async (ctx) => {
     console.log(ctx.params)
     let player = ctx.request.url.searchParams.get("player");
-    console.log(player)
     if (ctx.params && ctx.params.id && player) {
       console.log(`${player} has joined ${ctx.params.id}`)
       const game = await db.fetchGame(ctx.params.id);
@@ -84,13 +83,25 @@ export function TheRouter(sqlite : any) {
       notFound(ctx);
     }
   })
-  .post("/api/game/:id/next_round", async (ctx) => {
+  .get("/api/game/:id/next_round", async (ctx) => {
     console.log(ctx.params)
     if (ctx.params && ctx.params.id) {
       const game = await db.fetchGame(ctx.params.id);
       game.letter = String.fromCharCode(Math.ceil(Math.random() * 27) + 65);
       db.saveGame(game)
       console.log(game);
+      ctx.response.body = game;
+    } else {
+      notFound(ctx);
+    }
+  })
+  .get("/api/game/:id/finish_round", async (ctx) => {
+    let player = ctx.request.url.searchParams.get("player");
+    console.log(player)
+    if (ctx.params && ctx.params.id && player) {
+      const game = await db.fetchGame(ctx.params.id);
+      game.letter = `${game.letter}_${player}`;
+      db.saveGame(game)
       ctx.response.body = game;
     } else {
       notFound(ctx);

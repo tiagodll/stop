@@ -67,6 +67,20 @@
         });
     }
 
+    function nextRoundClicked() {
+        let res = fetch(`${SERVER}/api/game/${game.id}/next_round`)
+        .then((r) => r.json())
+        .then((result) => {
+            game = result;
+            game_id = game.id;
+            localStorage.setItem("game_id", game.id);
+            localStorage.setItem("player", player);
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
+
     
     // const sse = new EventSource(`${SERVER}/sse/1234567`);//, { withCredentials: true });
     // sse.onmessage = (evt) => {
@@ -102,7 +116,7 @@
             {/each}
         </ul>
         <button disabled={topics.length<2} on:click={startGameClicked}>start game</button>
-    {:else}
+    {:else if game.letter==null}
         <h1>Hello {player}, welcome to the game {game.id}!</h1>
         <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a>
         <p>Current players:</p>
@@ -111,6 +125,28 @@
                 <li>{player}</li>
             {/each}
         </ul>
+        
+        <button on:click={nextRoundClicked}>begin round</button>
+    {:else if game.letter.indexOf("_") < 0}
+        <h1>Game {game.id}, round {game.letter}</h1>
+        <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a>
+        <p>Current players:</p>
+        <ul>
+            {#each game.players as player }
+                <li>{player}</li>
+            {/each}
+        </ul>
+    {:else}
+        <h1>Game {game.id}, results for round {game.letter.substr(1)}</h1>
+        <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a>
+        <p>Current players:</p>
+        <ul>
+            {#each game.players as player }
+                <li>{player}</li>
+            {/each}
+        </ul>
+        
+        <button on:click={nextRoundClicked}>start next round</button>
     {/if}
 
     <ul id="events"></ul>
