@@ -18,7 +18,7 @@ export function TheRouter(sqlite : any) {
     Deno.close(file.rid);
     ctx.response.body = myFileContent;
   })
-  .post("/api/create_game", async (ctx:Context) => {
+  .post("/api/create-game", async (ctx:Context) => {
     if (!ctx.request.hasBody) {
       ctx.throw(Status.BadRequest, "Bad Request");
     }
@@ -83,7 +83,7 @@ export function TheRouter(sqlite : any) {
       notFound(ctx);
     }
   })
-  .get("/api/game/:id/next_round", async (ctx) => {
+  .get("/api/game/:id/next-round", async (ctx) => {
     console.log(ctx.params)
     if (ctx.params && ctx.params.id) {
       const game = await db.fetchGame(ctx.params.id);
@@ -95,7 +95,7 @@ export function TheRouter(sqlite : any) {
       notFound(ctx);
     }
   })
-  .get("/api/game/:id/finish_round", async (ctx) => {
+  .get("/api/game/:id/finish-round", async (ctx) => {
     let player = ctx.request.url.searchParams.get("player");
     console.log(player)
     if (ctx.params && ctx.params.id && player) {
@@ -106,6 +106,22 @@ export function TheRouter(sqlite : any) {
     } else {
       notFound(ctx);
     }
+  })
+  .post("/api/game/:id/save-answers", async (ctx:Context) => {
+    if (!ctx.request.hasBody) { ctx.throw(Status.BadRequest, "Bad Request") }
+
+    const params = JSON.parse(await (await ctx.request.body()).value || "");
+    
+    let round : IRound = {
+      game_id: params.game_id,
+      letter: params.letter,
+      player: params.player,
+      answers: params.answers,
+      score: 0
+    }
+
+    db.savePlayerRound(round)
+    ctx.response.body = round;
   })
   .get("/api/game/:id/round/:letter", async (ctx) => {
     if (ctx.params && ctx.params.id && ctx.params.letter) {

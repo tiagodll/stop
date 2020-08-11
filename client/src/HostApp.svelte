@@ -1,15 +1,14 @@
-<svelte:options immutable/>
-
 <script>
+    import { isNullOrWhitespace } from './helpers.js';
+
     export let game_id, player;
-    let game = null, topics=[], players=[], selected_topic="";
+    let game = null, topics=[], players=[], selected_topic="", round=[];
 
     if(!isNullOrWhitespace(localStorage.getItem("player")))
         player = localStorage.getItem("player");
 
     if(!isNullOrWhitespace(localStorage.getItem("game_id"))){
         game_id = localStorage.getItem("game_id");
-        console.log(`fetch: ${SERVER}/api/game/${game_id}?player=${player}`)
         fetch(`${SERVER}/api/game/${game_id}?player=${player}`)
         .then((r) => r.json())
         .then((result) => {
@@ -21,16 +20,21 @@
             }
             else{
                 game = result;
+                if(game.letter.indexOf("_") > 0)
+                    loadRound(game);
             }
         })
-        .catch((error) => {
-            console.error('Error:', error);
-        });
+        .catch((error) => { console.error('Error:', error) });
     }
-    
-    function isNullOrWhitespace(str) {
-        return str == undefined || str == null || str == ""
+
+    function loadRound(game) {
+        let letter = game.letter.substring(0, game.letter.indexOf("_"))
+        fetch(`${SERVER}/api/game/${game_id}/round/${letter}`)
+        .then((r) => r.json())
+        .then((result) => { round = result })
+        .catch((error) => { console.error('Error:', error); return null });
     }
+
     function newTopicClicked() {
         if(isNullOrWhitespace(selected_topic)){
             document.getElementById("selected_topic").focus();
@@ -48,7 +52,7 @@
         document.getElementById("selected_topic").focus();
     }
     function startGameClicked() {
-        let res = fetch(`${SERVER}/api/create_game`, {
+        fetch(`${SERVER}/api/create-game`, {
             method: 'POST',
             body: JSON.stringify({
                 players: [player],
@@ -62,13 +66,11 @@
             localStorage.setItem("game_id", game.id);
             localStorage.setItem("player", player);
         })
-        .catch((error) => {
-            console.error('Error:', error);
-        });
+        .catch((error) => { console.error('Error:', error) });
     }
 
     function nextRoundClicked() {
-        let res = fetch(`${SERVER}/api/game/${game.id}/next_round`)
+        fetch(`${SERVER}/api/game/${game.id}/next-round`)
         .then((r) => r.json())
         .then((result) => {
             game = result;
@@ -76,9 +78,7 @@
             localStorage.setItem("game_id", game.id);
             localStorage.setItem("player", player);
         })
-        .catch((error) => {
-            console.error('Error:', error);
-        });
+        .catch((error) => { console.error('Error:', error) });
     }
 
     
@@ -140,11 +140,22 @@
         <h1>Game {game.id}, results for round {game.letter.substr(1)}</h1>
         <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a>
         <p>Current players:</p>
-        <ul>
-            {#each game.players as player }
-                <li>{player}</li>
+        <table>
+            <tr>
+                <td>Player</td>
+                {#each game.topics as topic }
+                    <td>{topic}</td>
+                {/each}
+            </tr>
+            {#each round as item }
+            <tr>
+                <td>{item.player}</td>
+                {#each item.answers as answer }
+                    <td>{answer}</td>
+                {/each}
+            </tr>
             {/each}
-        </ul>
+        </table>
         
         <button on:click={nextRoundClicked}>start next round</button>
     {/if}

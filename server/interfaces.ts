@@ -10,6 +10,6 @@ interface IRound{
     game_id: string,
     letter:string,
     player: string,
-    answers: string,
+    answers: Array<string>,
     score:number
 }

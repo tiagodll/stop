@@ -2,7 +2,6 @@ import PlayerApp from './PlayerApp.svelte';
 import HostApp from './HostApp.svelte';
 
 
-//var searchParams = new URLSearchParams(window.location.href.substr(window.location.href.indexOf("?")));
 var searchParams = new URLSearchParams(document.URL.substr(document.URL.indexOf("?")));
 let app;
 

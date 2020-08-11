@@ -1,4 +1,6 @@
 <script>
+	import { isNullOrWhitespace } from './helpers.js';
+	
     export let game_id, player;
     let game = null, answers=[];
 
@@ -24,16 +26,10 @@
 				answers = game.topics.map(_ => "")
             }
         })
-        .catch((error) => {
-            console.error('Error:', error);
-        });
+        .catch((error) => { console.error('Error:', error) });
 	}
-	
-    function isNullOrWhitespace(str) {
-        return str == undefined || str == null || str == ""
-    }
     function joinGameClicked() {
-        let res = fetch(`${SERVER}/api/game/${game_id}/join?player=${player}`)
+        fetch(`${SERVER}/api/game/${game_id}/join?player=${player}`)
         .then((r) => r.json())
         .then((result) => {
             game = result;
@@ -41,23 +37,30 @@
             localStorage.setItem("player", player);
 			answers = game.topics.map(_ => "")
         })
-        .catch((error) => {
-            console.error('Error:', error);
-        });
-        return str == undefined || str == null || str == ""
+        .catch((error) => { console.error('Error:', error) });
     }
     function finishRoundClicked() {
-        let res = fetch(`${SERVER}/api/game/${game_id}/finish_round?player=${player}`)
+        fetch(`${SERVER}/api/game/${game_id}/finish-round?player=${player}`)
         .then((r) => r.json())
-        .then((result) => {
-            game = result;
-            //answers = game.topics.map(_ => "")
+        .then((result) => { game = result })
+        .catch((error) => { console.error('Error:', error) });
+    }
+    function saveAnswers(i, data) {
+		answers[i] = data;
+
+        fetch(`${SERVER}/api/game/${game_id}/save-answers`, {
+            method: 'POST',
+            body: JSON.stringify({
+				game_id: game.id,
+				letter: game.letter,
+                player: player,
+				answers: answers,
+				score: 0
+            })
         })
-        .catch((error) => {
-            console.error('Error:', error);
-        });
-
-
+        .then((r) => r.json())
+        .then((result) => { console.log(result) })
+        .catch((error) => { console.error('Error:', error) });
     }
 
 </script>
@@ -86,8 +89,8 @@
 			{#each answers as answer, i }
 			<li>
 				{game.topics[i]}
-				<input type="text" bind:value={answer}  />
-				'{answer}'
+				<input type="text" on:change={(e) => saveAnswers(i, e.target.value)} />
+				'{answers[i]}'
 			</li>
 			{/each}
 		</ul>

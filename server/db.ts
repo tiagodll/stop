@@ -35,7 +35,7 @@ export async function create(connection_string: string) {
 
 
   saveGame({id: "asd", password: "qwe", players: ["tiago","berta"], topics: ["topic1","topic2","topic3"], letter: "a"});
-  savePlayerRound({game_id:"asd", letter: "a", player: "tiago", answers: "asd|aqwe|azxc", score: 5});
+  savePlayerRound({game_id:"asd", letter: "a", player: "tiago", answers: ["asd","aqwe","azxc"], score: 5});
 }
 
 export async function saveGame(game:IGame) {
@@ -58,20 +58,20 @@ export async function fetchGame(game_id: string) : IGame {
     return result.length>0 ? result[0] : null;
 }
 
-export async function savePlayerRound(round:IRound) {
+export async function savePlayerRound(round: IRound) {
   console.log("savePlayerRound");
   console.log(round);
   return await db.query(
     `INSERT OR REPLACE INTO rounds (game_id, letter, player, answers, score) VALUES (?, ?, ?, ?, ?)`,
-    [round.game_id, round.letter, round.player, round.answers, round.score],
+    [round.game_id, round.letter, round.player, round.answers.join("|"), round.score],
   );
 }
 
-export async function fetchRound(id: string, letter: string) {
-  console.log("fetchRound", id);
-  const rows = [
-    ...db.query("SELECT * FROM rounds WHERE game_id=? AND letter=?", [id, letter]).asObjects(),
-  ];
-  console.log(rows);
-  return rows;
+export async function fetchRound(id: string, letter: string) : IRound {
+  return [
+      ...db.query("SELECT * FROM rounds WHERE game_id=? AND letter=?", [id, letter]).asObjects()
+    ].map((x:any )=> {
+      x.answers = x.answers.split("|");
+      return x;
+    });
 }
