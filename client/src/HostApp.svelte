@@ -20,18 +20,27 @@
             }
             else{
                 game = result;
-                if(game.letter.indexOf("_") > 0)
+                if(game.letter.indexOf("_") > 0){
                     loadRound(game);
+                }
             }
         })
         .catch((error) => { console.error('Error:', error) });
     }
 
+    function letter(){
+        return game.letter.substring(0, game.letter.indexOf("_"))
+    }
+
     function loadRound(game) {
-        let letter = game.letter.substring(0, game.letter.indexOf("_"))
-        fetch(`${SERVER}/api/game/${game_id}/round/${letter}`)
+        fetch(`${SERVER}/api/game/${game_id}/round/${letter()}`)
         .then((r) => r.json())
-        .then((result) => { round = result })
+        .then((result) => { 
+            round = result
+            for (let i = 0; i < round.length; i++) {
+                round[i].score = calculateScore(round[i].player);
+            }
+        })
         .catch((error) => { console.error('Error:', error); return null });
     }
 
@@ -81,6 +90,29 @@
         .catch((error) => { console.error('Error:', error) });
     }
 
+    function markAnswer(player, topic) {
+        let pi = round.findIndex(x => x.player == player);
+        let ti = game.topics.findIndex(x => x == topic);
+
+        let ans = round[pi].answers[ti];
+        round[pi].answers[ti] = ans[0] == "_" ? ans.substr(1): "_" + ans;
+        round[pi].score = calculateScore(player);
+    }
+
+    function calculateScore(player) {
+        let pi = round.findIndex(x => x.player == player);
+        
+        return round[pi].answers.reduce((r, x) => {
+            let l = x[0].toUpperCase();
+            if(l == letter())
+                return r + 1;
+            if(l == "_")
+                return r - 1;
+            
+            return r;
+        }, 0);
+    }
+
     
     // const sse = new EventSource(`${SERVER}/sse/1234567`);//, { withCredentials: true });
     // sse.onmessage = (evt) => {
@@ -105,19 +137,28 @@
 
 <main>
     {#if game == null}
-        <h1>Create new game</h1>
-        <input id="host_player_name" type="text" bind:value={player} placeholder="enter your name">
+        <h1 class="nes-text is-primary">Create new game</h1>
+        <div class="nes-field is-inline">
+            <label for="name_field">Player</label>
+            <input class="nes-input" id="host_player_name" type="text" bind:value={player} placeholder="enter your name">
+        </div>
+        
         <br>
-        <input id="selected_topic" type="text" bind:value={selected_topic} placeholder="topic">
-        <button on:click={newTopicClicked}>add topic</button>
+
+        <div class="nes-field is-inline">
+            <label for="name_field">Topic</label>
+            <input class="nes-input" id="selected_topic" type="text" bind:value={selected_topic} placeholder="topic">
+            <button class="nes-btn is-primary" on:click={newTopicClicked}>add topic</button>
+        </div>
+
         <ul>
             {#each topics as topic }
                 <li>{topic}</li>
             {/each}
         </ul>
-        <button disabled={topics.length<2} on:click={startGameClicked}>start game</button>
+        <button class="nes-btn" class:is-success="{topics.length>1}" disabled={topics.length<2} on:click={startGameClicked}>start game</button>
     {:else if game.letter==null}
-        <h1>Hello {player}, welcome to the game {game.id}!</h1>
+        <h1 class="nes-text is-primary">Hello {player}, welcome to the game {game.id}!</h1>
         <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a>
         <p>Current players:</p>
         <ul>
@@ -128,8 +169,9 @@
         
         <button on:click={nextRoundClicked}>begin round</button>
     {:else if game.letter.indexOf("_") < 0}
-        <h1>Game {game.id}, round {game.letter}</h1>
+        <h1 class="nes-text is-primary">Game {game.id}, round {letter()}</h1>
         <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a>
+        <br><br>
         <p>Current players:</p>
         <ul>
             {#each game.players as player }
@@ -137,27 +179,41 @@
             {/each}
         </ul>
     {:else}
-        <h1>Game {game.id}, results for round {game.letter.substr(1)}</h1>
-        <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a>
-        <p>Current players:</p>
-        <table>
-            <tr>
-                <td>Player</td>
-                {#each game.topics as topic }
+        <h1 class="nes-text is-primary">Game {game.id}, results for round {letter()}</h1>
+        <!-- <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a> -->
+        <br>
+        <p>Round results:</p>
+        <br>
+        <div class="">
+            <table class="nes-table is-bordered is-justified">
+                <thead>
+                    <tr>
+                        <th>Player</th>
+                        {#each round as item }
+                            <th>{item.player}</th>
+                        {/each}
+                    </tr>
+                </thead>
+                {#each game.topics as topic, i }
+                    <tr>
                     <td>{topic}</td>
+                    {#each round as item }
+                        <td class="answer" on:click={markAnswer(item.player, game.topics[i])}>
+                            {item.answers[i]}
+                        </td>
+                    {/each}
+                </tr>
                 {/each}
-            </tr>
-            {#each round as item }
-            <tr>
-                <td>{item.player}</td>
-                {#each item.answers as answer }
-                    <td>{answer}</td>
-                {/each}
-            </tr>
-            {/each}
-        </table>
-        
-        <button on:click={nextRoundClicked}>start next round</button>
+                <tr>
+                    <td>Totals:</td>
+                    {#each round as item}
+                        <td>{item.score}</td>
+                    {/each}
+                </tr>
+            </table>
+        </div>
+        <br>
+        <div class="to-right"><button class="nes-btn is-primary" on:click={nextRoundClicked}>start next round</button></div>
     {/if}
 
     <ul id="events"></ul>
@@ -165,22 +221,30 @@
 
 <style>
 	main {
-		text-align: center;
-		padding: 1em;
-		max-width: 240px;
-		margin: 0 auto;
+		max-width: 800px;
+		margin: 5% auto;
 	}
+    .to-right{ 
+        text-align: right;
+    }
+    .is-justified{
+        width: 100%;
+        border-collapse:collapse;
+    }
+    .nes-table td.unique{
+        background-color: green;
+    }
+    .nes-table td.answer:hover{
+        background-color: maroon;
+    }
+    .nes-table td.answer:hover .i{
+        display: inline-block;
+    }
 
-	h1 {
-		color: #ff3e00;
-		text-transform: uppercase;
-		font-size: 2em;
-		font-weight: 100;
-	}
 
-	@media (min-width: 640px) {
+	/* @media (min-width: 640px) {
 		main {
 			max-width: none;
 		}
-	}
+	} */
 </style>

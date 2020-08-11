@@ -69,12 +69,12 @@
     {#if game == null}
         <!-- <h1>Invalid game id</h1> -->
     <!-- {:else if game == null} -->
-        <h1>Welcome to the game {game_id}!</h1>
+        <h1 class="nes-text is-primary">Welcome to the game {game_id}!</h1>
         <p>please sign in.</p>
-        <input type="text" bind:value={player} placeholder="enter your name">
-        <button on:click={joinGameClicked}>join game</button>
+        <input class="nes-input" type="text" bind:value={player} placeholder="enter your name">
+        <button class="nes-btn is-primary" on:click={joinGameClicked}>join game</button>
     {:else if game != null && isNullOrWhitespace(game.letter)}
-        <h1>Hello {player}, welcome to the game {game.id}!</h1>
+        <h1 class="nes-text is-primary">Hello {player}, welcome to the game {game.id}!</h1>
         <p>Waiting round to start</p>
         <p>Current players:</p>
         <ul>
@@ -83,18 +83,16 @@
             {/each}
         </ul>
 	{:else if game.letter.indexOf("_") < 0}
-		<h1>Round {game.letter}</h1>
+		<h1 class="nes-text is-primary">Round {game.letter}</h1>
 		<p>topics:</p>
-		<ul>
-			{#each answers as answer, i }
-			<li>
-				{game.topics[i]}
-				<input type="text" on:change={(e) => saveAnswers(i, e.target.value)} />
-				'{answers[i]}'
-			</li>
-			{/each}
-		</ul>
-        <button on:click={finishRoundClicked}>finished</button>
+        {#each answers as answer, i }
+        <div class="nes-field is-inline">
+            <label for="name_field">{game.topics[i]}</label>
+            <input class="nes-input" type="text" on:change={(e) => saveAnswers(i, e.target.value)} />
+        </div>
+        {/each}
+        <br>
+        <div class="to-right"><button class="nes-btn is-primary" on:click={finishRoundClicked}>finished</button></div>
 	{:else}
 		<h1>Round {game.letter} finished</h1>
 		?
@@ -105,22 +103,17 @@
 
 <style>
 	main {
-		text-align: center;
-		padding: 1em;
-		max-width: 240px;
-		margin: 0 auto;
-	}
+		max-width: 800px;
+		margin: 5% auto;
+    }
+    .to-right{ 
+        text-align: right;
+    }
 
-	h1 {
-		color: #ff3e00;
-		text-transform: uppercase;
-		font-size: 2em;
-		font-weight: 100;
-	}
 
-	@media (min-width: 640px) {
+	/* @media (min-width: 640px) {
 		main {
 			max-width: none;
 		}
-	}
+	} */
 </style>
