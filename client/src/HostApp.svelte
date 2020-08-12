@@ -2,30 +2,14 @@
     import { isNullOrWhitespace } from './helpers.js';
 
     export let game_id, player;
-    let game = null, topics=[], players=[], selected_topic="", round=[], scoreboard=[];
+    let game = null, topics=[], players=[], selected_topic="", round=[], scoreboard=[], poller = null, reloading=false;;
 
     if(!isNullOrWhitespace(localStorage.getItem("player")))
         player = localStorage.getItem("player");
 
     if(!isNullOrWhitespace(localStorage.getItem("game_id"))){
         game_id = localStorage.getItem("game_id");
-        fetch(`${SERVER}/api/game/${game_id}?player=${player}`)
-        .then((r) => r.json())
-        .then((result) => {
-            console.log(result)
-            if(result == null || isNullOrWhitespace(result.id)){
-                localStorage.removeItem("game_id");
-                game_id = null;
-                game = null;
-            }
-            else{
-                game = result;
-                if(game.letter == "$" || game.letter.indexOf("_") > 0){
-                    loadRound(game);
-                }
-            }
-        })
-        .catch((error) => { console.error('Error:', error) });
+        loadGame(game_id)
     }
 
     function letter(game){
@@ -33,6 +17,25 @@
             return game.letter;
         else
             return game.letter.substring(0, game.letter.indexOf("_"))
+    }
+
+    function loadGame(game_id) {
+        fetch(`${SERVER}/api/game/${game_id}?player=${player}`)
+        .then((r) => r.json())
+        .then((result) => {
+            if(result == null || isNullOrWhitespace(result.id)){
+                localStorage.removeItem("game_id");
+                game_id = null;
+                game = null;
+            }
+            else{
+                game = result;
+                if(game.letter != null && (game.letter == "$" || game.letter.indexOf("_") > 0)){
+                    loadRound(game);
+                }
+            }
+        })
+        .catch((error) => { console.error('Error:', error) });
     }
 
     function loadRound(game) {
@@ -91,6 +94,11 @@
             game_id = game.id;
             localStorage.setItem("game_id", game.id);
             localStorage.setItem("player", player);
+            poller = setInterval(() => { 
+                reloading=true; 
+                console.log("reloading..."); 
+                loadGame(game_id); 
+                reloading=true; }, 1000);
         })
         .catch((error) => { console.error('Error:', error) });
     }
@@ -121,6 +129,17 @@
         })
         .catch((error) => { console.error('Error:', error) });
     }
+    function deleteGameClicked() {
+        fetch(`${SERVER}/api/game/${game.id}/delete-game`, {
+            method: 'DELETE',
+            body: ""
+        })
+        .then((r) => r.json())
+        .then((result) => {
+            document.location.href = "/"
+        })
+        .catch((error) => { console.error('Error:', error) });
+    }
 
     function markAnswer(player, topic) {
         let pi = round.findIndex(x => x.player == player);
@@ -139,8 +158,7 @@
             })
         })
         .then((r) => r.json())
-        .then((result) => {
-            
+        .then((result) => {            
             //game = result;
         })
         .catch((error) => { console.error('Error:', error) });
@@ -186,6 +204,7 @@
 </script>
 
 <main>
+    <i class="nes-logo" visible:active={reloading} style="position: absolute; visibility: hidden; top: 20px; left: 20px"></i>
     {#if game == null}
         <h1 class="nes-text is-primary">Create new game</h1>
         <div class="nes-field is-inline">
@@ -206,7 +225,8 @@
                 <li>{topic}</li>
             {/each}
         </ul>
-        <button class="nes-btn" class:is-success="{topics.length>1}" disabled={topics.length<2} on:click={startGameClicked}>start game</button>
+        <div class="to-right"><button class="nes-btn" class:is-success="{topics.length>1}" disabled={topics.length<2} on:click={startGameClicked}>start game</button></div>
+        
         
     {:else if game.letter==null}
         <h1 class="nes-text is-primary">Hello {player}, welcome to the game {game.id}!</h1>
@@ -254,6 +274,9 @@
                 </tr>
             </tfoot>
         </table>
+        <br>
+        <div class="to-right"><button class="nes-btn is-error" on:click={deleteGameClicked}>quit game</button></div>
+        
 
     {:else if game.letter.indexOf("_") < 0}
         <h1 class="nes-text is-primary">Game {game.id}, round {letter(game)}</h1>
@@ -316,6 +339,10 @@
 		max-width: 800px;
 		margin: 5% auto;
 	}
+    .visible{
+        visibility: visible;
+    }
+
     .to-right{ 
         text-align: right;
     }

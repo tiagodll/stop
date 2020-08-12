@@ -2,7 +2,7 @@
 	import { isNullOrWhitespace } from './helpers.js';
 	
     export let game_id, player;
-    let game = null, answers=[], round=[], scoreboard=[];
+    let game = null, answers=[], round=[], scoreboard=[], poller = null, reloading=false;
 
     var searchParams = new URLSearchParams(document.URL.substr(document.URL.indexOf("?")));
 	game_id = searchParams.get("game_id");
@@ -10,16 +10,19 @@
 	if(!isNullOrWhitespace(localStorage.getItem("player")))
 		player = localStorage.getItem("player");
 	
-	if(!isNullOrWhitespace(localStorage.getItem("game_id")) && game_id == localStorage.getItem("game_id")){
-		console.log(`fetch: ${SERVER}/api/game/${game_id}?player=${player}`)
+	if(game_id == localStorage.getItem("game_id")){
+        loadGame(game_id);
+        startPolling(game_id);
+    }
+    
+    function loadGame(game_id) {
         fetch(`${SERVER}/api/game/${game_id}?player=${player}`)
         .then((r) => r.json())
         .then((result) => {
-            console.log(result)
             if(result == null || isNullOrWhitespace(result.id)){
                 localStorage.removeItem("game_id");
                 game_id = null;
-				game = null;
+                game = null;
             }
             else{
                 game = result;
@@ -27,10 +30,43 @@
                 if(game.letter == "$" || game.letter.indexOf("_") > 0){
                     loadRound(game);
                 }
+                // if(game != null && result.letter != game.letter)
+                //     answers = game.topics.map(_ => ""); 
+                
+                // game = result;
+                // if(!isNullOrWhitespace(game.letter) && (game.letter == "$" || game.letter.indexOf("_") > 0)){
+                //     loadRound(game);
+                // }
             }
         })
         .catch((error) => { console.error('Error:', error) });
-	}
+    }
+
+    function startPolling(game_id){
+        poller = setInterval(() => {
+            let status = Status(game);
+            if(status == WAITING_TO_START 
+            || status == GAME_ENDED 
+            || status == ROUND_ACTIVE 
+            || status == ROUND_ENDED){
+                fetch(`${SERVER}/api/game/${game_id}?player=${player}`)
+                .then((r) => r.json())
+                .then((result) => {
+                    if(status == ROUND_ACTIVE){
+                        if(game.letter != result.letter){
+                            game = result;
+                            loadRound(game);
+                        }
+                    }else{
+                        game = result;
+                        if(status == ROUND_ENDED)
+                            loadRound(game);
+                    }
+                })
+                .catch((error) => { console.error('Error:', error) });
+            }
+        }, 1000);
+    }
 
     function letter(game){
         if(game.letter.indexOf("_") < 0)
@@ -46,7 +82,14 @@
             game = result;
             localStorage.setItem("game_id", game.id);
             localStorage.setItem("player", player);
-			answers = game.topics.map(_ => "")
+            answers = game.topics.map(_ => "")
+            
+            poller = setInterval(() => { 
+                reloading=true; 
+                console.log("reloading..."); 
+                loadGame(game_id); 
+                reloading=true; }, 2000);
+            //clearInterval(poller);
         })
         .catch((error) => { console.error('Error:', error) });
     }
@@ -119,17 +162,41 @@
         .catch((error) => { console.error('Error:', error) });
     }
 
+    const NEW_GAME = "new game";
+    const WAITING_TO_START="waiting to start";
+    const GAME_ENDED = "game ended";
+    const ROUND_ACTIVE = "round active";
+    const ROUND_ENDED = "round ended";
+
+    function Status(game) {
+        if(game == null)
+            return NEW_GAME;
+
+        if(isNullOrWhitespace(game.letter))
+            return WAITING_TO_START;
+        
+        if(game.letter == "$")
+            return GAME_ENDED;
+        
+        if(game.letter.indexOf("_") < 0)
+            return ROUND_ACTIVE;
+        
+        return ROUND_ENDED;
+    }
+
 </script>
 
 <main>
-    {#if game == null}
+    <i class="nes-logo" visible:active={reloading} style="position: absolute; visibility: hidden; top: 20px; left: 20px"></i>
+    {#if Status(game) == NEW_GAME}
         <!-- <h1>Invalid game id</h1> -->
     <!-- {:else if game == null} -->
         <h1 class="nes-text is-primary">Welcome to the game {game_id}!</h1>
         <p>please sign in.</p>
         <input class="nes-input" type="text" bind:value={player} placeholder="enter your name">
         <button class="nes-btn is-primary" on:click={joinGameClicked}>join game</button>
-    {:else if game != null && isNullOrWhitespace(game.letter)}
+
+    {:else if Status(game) == WAITING_TO_START}
         <h1 class="nes-text is-primary">Hello {player}, welcome to the game {game.id}!</h1>
         <p>Waiting round to start</p>
         <p>Current players:</p>
@@ -138,7 +205,7 @@
                 <li>{player}</li>
             {/each}
         </ul>
-    {:else if game.letter == "$"}
+    {:else if Status(game) == GAME_ENDED}
         <h1 class="nes-text is-primary">Game {game.id} ended.</h1>
         <p>Scoreboard:</p>
         <table class="nes-table is-bordered is-justified">
@@ -174,7 +241,7 @@
             </tfoot>
         </table>
         
-	{:else if game.letter.indexOf("_") < 0}
+	{:else if Status(game) == ROUND_ACTIVE}
         <h1 class="nes-text is-primary">Round {game.letter}</h1>
         <p>topics:</p>
         {#each answers as answer, i }
@@ -185,7 +252,8 @@
         {/each}
         <br>
         <div class="to-right"><button class="nes-btn is-primary" on:click={finishRoundClicked}>finished</button></div>
-    {:else}
+
+    {:else} <!-- ROUND ENDED -->
         <h1 class="nes-text is-primary">Round {letter(game)} finished</h1>
         <br>
         <p>Round results:</p>
@@ -236,6 +304,10 @@
     .is-justified{
         width: 100%;
         /* border-collapse:collapse; */
+    }
+
+    .visible{
+        visibility: visible;
     }
 
     .nes-table th{

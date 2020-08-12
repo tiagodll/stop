@@ -4,6 +4,13 @@ import nanoid from "https://deno.land/x/nanoid/mod.ts";
 import * as db from "./db.ts";
 import { IGame, IRound } from "./interfaces.ts";
 
+async function renderFile(ctx:any, filename:string){
+  const file = await Deno.open(filename, {read: true});
+  const myFileContent = await Deno.readAll(file);
+  Deno.close(file.rid);
+  ctx.response.body = myFileContent;
+}
+
 export function TheRouter(sqlite : any) {
   // let sse : ServerSentEventTarget;
 
@@ -13,10 +20,10 @@ export function TheRouter(sqlite : any) {
     ctx.response.body = "pong";
   })
   .get("/play", async (ctx) => {
-    const file = await Deno.open(`../client/public/index.html`, {read: true});
-    const myFileContent = await Deno.readAll(file);
-    Deno.close(file.rid);
-    ctx.response.body = myFileContent;
+    await renderFile(ctx, `../client/public/index.html`);
+  })
+  .get("/host", async (ctx) => {
+    await renderFile(ctx, `../client/public/index.html`);
   })
   .post("/api/create-game", async (ctx:Context) => {
     if (!ctx.request.hasBody) {

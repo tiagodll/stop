@@ -39,8 +39,6 @@ export async function create(connection_string: string) {
 }
 
 export async function saveGame(game:IGame) {
-  console.log("saveGame");
-  console.log(game)
   return await db.query(
     `INSERT OR REPLACE INTO games (id, password, players, topics, letter, timestamp) VALUES (?, ?, ?, ?, ?, date('now'))`,
     [game.id, game.password, game.players.join("|"), game.topics.join("|"), game.letter],
@@ -59,8 +57,6 @@ export async function fetchGame(game_id: string) : IGame {
 }
 
 export async function saveRound(round: IRound) {
-  console.log("savePlayerRound");
-  console.log(round);
   return await db.query(
     `INSERT OR REPLACE INTO rounds (game_id, letter, player, answers, score) VALUES (?, ?, ?, ?, ?)`,
     [round.game_id, round.letter, round.player, round.answers.join("|"), round.score],
@@ -83,4 +79,10 @@ export async function fetchAllRounds(id: string) : IRound {
       x.answers = x.answers.split("|");
       return x;
     });
+}
+
+export async function deleteGame(id: string) {
+  await db.query(`DELETE FROM rounds WHERE game_id=?`, [id]);
+  await db.query(`DELETE FROM games WHERE id=?`, [id]);
+  return true;
 }
