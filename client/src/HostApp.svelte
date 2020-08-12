@@ -237,7 +237,8 @@
                 <li>{player}</li>
             {/each}
         </ul>
-        <button class="nes-btn is-success" on:click={nextRoundClicked}>begin round</button>
+        <div class="to-right"><button class="nes-btn is-success" on:click={nextRoundClicked}>begin round</button></div>
+        
 
     {:else if game.letter == "$"}
         <h1 class="nes-text is-primary">Game {game.id} ended.</h1>

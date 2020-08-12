@@ -194,7 +194,8 @@
         <h1 class="nes-text is-primary">Welcome to the game {game_id}!</h1>
         <p>please sign in.</p>
         <input class="nes-input" type="text" bind:value={player} placeholder="enter your name">
-        <button class="nes-btn is-primary" on:click={joinGameClicked}>join game</button>
+        <div class="to-right"><button class="nes-btn is-primary" on:click={joinGameClicked}>join game</button></div>
+        
 
     {:else if Status(game) == WAITING_TO_START}
         <h1 class="nes-text is-primary">Hello {player}, welcome to the game {game.id}!</h1>
@@ -205,6 +206,7 @@
                 <li>{player}</li>
             {/each}
         </ul>
+
     {:else if Status(game) == GAME_ENDED}
         <h1 class="nes-text is-primary">Game {game.id} ended.</h1>
         <p>Scoreboard:</p>
