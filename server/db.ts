@@ -18,11 +18,6 @@ export async function create(connection_string: string) {
         timestamp DATETIME,
         PRIMARY KEY (id)
       )`);
-  // db.query(`
-  //     CREATE TABLE IF NOT EXISTS players (
-  //       game_id TEXT,
-  //       name TEXT
-  //     )`);
   db.query(`
       CREATE TABLE IF NOT EXISTS rounds (
         game_id TEXT,
@@ -34,8 +29,8 @@ export async function create(connection_string: string) {
       )`);
 
 
-  saveGame({id: "asd", password: "qwe", players: ["tiago","berta"], topics: ["topic1","topic2","topic3"], letter: "a"});
-  saveRound({game_id:"asd", letter: "a", player: "tiago", answers: ["asd","aqwe","azxc"], score: 5});
+  // saveGame({id: "asd", password: "qwe", players: ["tiago","berta"], topics: ["topic1","topic2","topic3"], letter: "a"});
+  // saveRound({game_id:"asd", letter: "a", player: "tiago", answers: ["asd","aqwe","azxc"], score: 5});
 }
 
 export async function saveGame(game:IGame) {

@@ -253,7 +253,9 @@
         </div>
         {/each}
         <br>
-        <div class="to-right"><button class="nes-btn is-primary" on:click={finishRoundClicked}>finished</button></div>
+        <div class="to-right">
+            <button class="nes-btn is-primary" on:click={finishRoundClicked}>finished</button>
+        </div>
 
     {:else} <!-- ROUND ENDED -->
         <h1 class="nes-text is-primary">Round {letter(game)} finished</h1>

@@ -130,7 +130,7 @@
         .catch((error) => { console.error('Error:', error) });
     }
     function deleteGameClicked() {
-        fetch(`${SERVER}/api/game/${game.id}/delete-game`, {
+        fetch(`${SERVER}/api/game/${game.id}`, {
             method: 'DELETE',
             body: ""
         })
@@ -225,7 +225,9 @@
                 <li>{topic}</li>
             {/each}
         </ul>
-        <div class="to-right"><button class="nes-btn" class:is-success="{topics.length>1}" disabled={topics.length<2} on:click={startGameClicked}>start game</button></div>
+        <div class="to-right">
+            <button class="nes-btn" class:is-success="{topics.length>1}" disabled={topics.length<2} on:click={startGameClicked}>start game</button>
+        </div>
         
         
     {:else if game.letter==null}
@@ -237,7 +239,9 @@
                 <li>{player}</li>
             {/each}
         </ul>
-        <div class="to-right"><button class="nes-btn is-success" on:click={nextRoundClicked}>begin round</button></div>
+        <div class="to-right">
+            <button class="nes-btn is-success" on:click={nextRoundClicked}>begin round</button>
+        </div>
         
 
     {:else if game.letter == "$"}
@@ -276,7 +280,9 @@
             </tfoot>
         </table>
         <br>
-        <div class="to-right"><button class="nes-btn is-error" on:click={deleteGameClicked}>quit game</button></div>
+        <div class="to-right">
+            <button class="nes-btn is-error" on:click={deleteGameClicked}>quit game</button>
+        </div>
         
 
     {:else if game.letter.indexOf("_") < 0}
@@ -289,6 +295,9 @@
                 <li>{player}</li>
             {/each}
         </ul>
+        <div class="to-right">
+            <button class="nes-btn is-error" on:click={deleteGameClicked}>quit game</button>
+        </div>
     {:else}
         <h1 class="nes-text is-primary">Round {letter(game)} finished</h1>
         <!-- <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a> -->

@@ -107,6 +107,15 @@ export function TheRouter(sqlite : any) {
       ctx.throw(Status.BadRequest, "Bad Request");
     }
   })
+  .delete("/api/game/:id", async (ctx) => {
+    if (ctx.params && ctx.params.id) {
+
+      db.deleteGame(ctx.params.id);
+      ctx.response.body = true;
+    }else{
+      ctx.throw(Status.BadRequest, "Bad Request");
+    }
+  })
   .post("/api/game/:id/next-round", async (ctx) => {
     if (ctx.request.hasBody && ctx.params && ctx.params.id) {
 
