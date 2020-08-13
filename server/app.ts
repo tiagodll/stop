@@ -2,7 +2,7 @@ import * as colors from "https://deno.land/std@0.56.0/fmt/colors.ts";
 import { Application, send, Context, Status, isHttpError } from "https://deno.land/x/oak/mod.ts";
 import * as db from "./db.ts";
 import { TheRouter } from "./router.ts";
-import { SocketServer } from "https://deno.land/x/sockets@master/mod.ts";
+// import { SocketServer } from "https://deno.land/x/sockets@master/mod.ts";
 import { oakCors } from "https://deno.land/x/cors/mod.ts";
 
 const env = Deno.env.toObject()
