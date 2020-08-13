@@ -119,3 +119,4 @@ dist
 _deno/
 _dotnet/
 *.db
+server/static/build/

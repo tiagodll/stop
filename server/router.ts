@@ -20,10 +20,10 @@ export function TheRouter(sqlite : any) {
     ctx.response.body = "pong";
   })
   .get("/play", async (ctx) => {
-    await renderFile(ctx, `../client/public/index.html`);
+    await renderFile(ctx, `static/index.html`);
   })
   .get("/host", async (ctx) => {
-    await renderFile(ctx, `../client/public/index.html`);
+    await renderFile(ctx, `static/index.html`);
   })
   .post("/api/create-game", async (ctx:Context) => {
     if (!ctx.request.hasBody) {

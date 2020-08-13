@@ -1,0 +1,26 @@
+#!/bin/bash
+
+#allows script to run as a crontab
+# cp ./data/backup.sh /var/backups/mongo/backup.sh
+# sudo chown root:toco /var/backups/mongo/backup.sh
+# sudo chmod u+x /var/backups/mongo/backup.sh
+
+#publish nodejs code
+cd client
+# cp ../devops/test.env ./.env
+npm install
+npm run build
+rm -rf ../server/static && mkdir ../server/static
+mv dist/* ../server/static
+
+#build dotnet docker
+cd ../server
+sudo docker stop server
+sudo docker build -t tocobooks . --rm
+sudo docker run -p 5000:5000 -t --rm \
+  --env ASPNETCORE_ENVIRONMENT=Development \
+  --env ASPNETCORE_URLS=http://+:5000 \
+  --env storagekey=RcoQ/1QwamAQ6yvLBOCU3YBh6snNy+wnK3vQJUo41d8W7ijDiRDBJ2pUiwSIjhWb1IHcuwLwrwi2yYNdjD9u6w== \
+  --link mongod:mongodb \
+  --name server -d -it tocobooks
+cd ..

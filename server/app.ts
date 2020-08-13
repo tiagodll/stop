@@ -35,7 +35,7 @@ app.use(router.allowedMethods());
 
 app.use(async (ctx) => {
   await send(ctx, ctx.request.url.pathname, {
-    root: `${Deno.cwd()}/../client/public`,
+    root: `${Deno.cwd()}/static`,
     index: "index.html",
   });
 });
