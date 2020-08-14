@@ -35,16 +35,20 @@ export function Status(game) {
 export function calculateScore(player, round) {
     let pi = round.findIndex(x => x.player == player);
 
-    return round[pi].answers.reduce((r, x) => {
+    return round[pi].answers.reduce((r, x, i) => {
         if(isNullOrWhitespace(x))
             return r;
 
         let l = x[0].toUpperCase();
         if(l == round[pi].letter)
-            return r + 1;
+            return r + (isAnswerUnique(player, x, round, i) ? 2 : 1);
         if(l == "_")
             return r - 1;
         
         return r;
     }, 0);
+}
+
+function isAnswerUnique(player, answer, round, i){
+    return round.some(x => x.player != player && x.answers[i] == answer)
 }
