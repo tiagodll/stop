@@ -1,5 +1,6 @@
 <script>
-    import { isNullOrWhitespace } from './helpers.js';
+    import { isNullOrWhitespace, letter, calculateScore, Status, 
+        NEW_GAME, WAITING_TO_START, GAME_ENDED, ROUND_ACTIVE, ROUND_ENDED } from './helpers.js';
     import Scoreboard from './components/Scoreboard.svelte';
     import RoundResults from './components/RoundResults.svelte';
 
@@ -14,12 +15,7 @@
         loadGame(game_id)
     }
 
-    function letter(game){
-        if(game.letter.indexOf("_") < 0)
-            return game.letter;
-        else
-            return game.letter.substring(0, game.letter.indexOf("_"))
-    }
+    
 
     function loadGame(game_id) {
         fetch(`${SERVER}/api/game/${game_id}?player=${player}`)
@@ -59,7 +55,7 @@
                 });
             }else{
                 for (let i = 0; i < round.length; i++) {
-                    round[i].score = calculateScore(round[i].player);
+                    round[i].score = calculateScore(round[i].player, round);
                 }
             }
         })
@@ -152,7 +148,7 @@
             return;
 
         round[pi].answers[ti] = ans[0] == "_" ? ans.substr(1): "_" + ans;
-        round[pi].score = calculateScore(player);
+        round[pi].score = calculateScore(player, round);
         fetch(`${SERVER}/api/game/${game_id}/save-answers`, {
             method: 'POST',
             body: JSON.stringify({
@@ -164,23 +160,6 @@
             //game = result;
         })
         .catch((error) => { console.error('Error:', error) });
-    }
-
-    function calculateScore(player) {
-        let pi = round.findIndex(x => x.player == player);
-        
-        return round[pi].answers.reduce((r, x) => {
-            if(isNullOrWhitespace(x))
-                return r;
-
-            let l = x[0].toUpperCase();
-            if(l == letter(game))
-                return r + 1;
-            if(l == "_")
-                return r - 1;
-            
-            return r;
-        }, 0);
     }
 
     
@@ -202,28 +181,6 @@
 	// 	// const res = await fetch(`https://jsonplaceholder.typicode.com/photos?_limit=20`);
 	// 	// photos = await res.json();
     // });
-    
-    const NEW_GAME = "new game";
-    const WAITING_TO_START="waiting to start";
-    const GAME_ENDED = "game ended";
-    const ROUND_ACTIVE = "round active";
-    const ROUND_ENDED = "round ended";
-
-    function Status(game) {
-        if(game == null)
-            return NEW_GAME;
-
-        if(isNullOrWhitespace(game.letter))
-            return WAITING_TO_START;
-        
-        if(game.letter == "$")
-            return GAME_ENDED;
-        
-        if(game.letter.indexOf("_") < 0)
-            return ROUND_ACTIVE;
-        
-        return ROUND_ENDED;
-    }
 
 </script>
 

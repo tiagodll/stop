@@ -1,5 +1,6 @@
 <script>
-	import { isNullOrWhitespace } from './helpers.js';
+    import { isNullOrWhitespace, letter, calculateScore, Status, 
+        NEW_GAME, WAITING_TO_START, GAME_ENDED, ROUND_ACTIVE, ROUND_ENDED } from './helpers.js';
     import Scoreboard from './components/Scoreboard.svelte';
     import RoundResults from './components/RoundResults.svelte';
 	
@@ -32,13 +33,6 @@
                 if(game.letter == "$" || game.letter.indexOf("_") > 0){
                     loadRound(game);
                 }
-                // if(game != null && result.letter != game.letter)
-                //     answers = game.topics.map(_ => ""); 
-                
-                // game = result;
-                // if(!isNullOrWhitespace(game.letter) && (game.letter == "$" || game.letter.indexOf("_") > 0)){
-                //     loadRound(game);
-                // }
             }
         })
         .catch((error) => { console.error('Error:', error) });
@@ -68,13 +62,6 @@
                 .catch((error) => { console.error('Error:', error) });
             }
         }, 1000);
-    }
-
-    function letter(game){
-        if(game.letter.indexOf("_") < 0)
-            return game.letter;
-        else
-            return game.letter.substring(0, game.letter.indexOf("_"))
     }
 
     function joinGameClicked() {
@@ -123,27 +110,11 @@
                 });
             }else{
                 for (let i = 0; i < round.length; i++) {
-                    round[i].score = calculateScore(round[i].player);
+                    round[i].score = calculateScore(round[i].player, round);
                 }
             }
         })
         .catch((error) => { console.error('Error:', error); return null });
-    }
-    function calculateScore(player) {
-        let pi = round.findIndex(x => x.player == player);
-        
-        return round[pi].answers.reduce((r, x) => {
-            if(isNullOrWhitespace(x))
-                return r;
-
-            let l = x[0].toUpperCase();
-            if(l == letter(game))
-                return r + 1;
-            if(l == "_")
-                return r - 1;
-            
-            return r;
-        }, 0);
     }
 
     function saveAnswers(i, data) {
@@ -162,28 +133,6 @@
         .then((r) => r.json())
         .then((result) => { console.log(result) })
         .catch((error) => { console.error('Error:', error) });
-    }
-
-    const NEW_GAME = "new game";
-    const WAITING_TO_START="waiting to start";
-    const GAME_ENDED = "game ended";
-    const ROUND_ACTIVE = "round active";
-    const ROUND_ENDED = "round ended";
-
-    function Status(game) {
-        if(game == null)
-            return NEW_GAME;
-
-        if(isNullOrWhitespace(game.letter))
-            return WAITING_TO_START;
-        
-        if(game.letter == "$")
-            return GAME_ENDED;
-        
-        if(game.letter.indexOf("_") < 0)
-            return ROUND_ACTIVE;
-        
-        return ROUND_ENDED;
     }
 
 </script>
