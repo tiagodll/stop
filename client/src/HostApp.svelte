@@ -1,8 +1,10 @@
 <script>
     import { isNullOrWhitespace } from './helpers.js';
+    import Scoreboard from './components/Scoreboard.svelte';
+    import RoundResults from './components/RoundResults.svelte';
 
     export let game_id, player;
-    let game = null, topics=[], players=[], selected_topic="", round=[], scoreboard=[], poller = null, reloading=false;;
+    let game = null, topics=[], players=[], selected_topic="", round=[], scores=[], poller = null, reloading=false;;
 
     if(!isNullOrWhitespace(localStorage.getItem("player")))
         player = localStorage.getItem("player");
@@ -44,13 +46,13 @@
         .then((result) => { 
             round = result
             if(game.letter == "$"){
-                scoreboard = [];
+                scores = [];
                 round.forEach(r => {
-                    if(scoreboard.findIndex(x => x.letter == r.letter) < 0)
-                        scoreboard.push({ letter: r.letter, scores: [] });
+                    if(scores.findIndex(x => x.letter == r.letter) < 0)
+                        scores.push({ letter: r.letter, scores: [] });
                     
-                    let i = scoreboard.findIndex(x => x.letter == r.letter);
-                    scoreboard[i].scores.push({
+                    let i = scores.findIndex(x => x.letter == r.letter);
+                    scores[i].scores.push({
                         player: r.player,
                         score: r.score
                     }); 
@@ -199,13 +201,35 @@
     //     player = "xxxx"
 	// 	// const res = await fetch(`https://jsonplaceholder.typicode.com/photos?_limit=20`);
 	// 	// photos = await res.json();
-	// });
+    // });
+    
+    const NEW_GAME = "new game";
+    const WAITING_TO_START="waiting to start";
+    const GAME_ENDED = "game ended";
+    const ROUND_ACTIVE = "round active";
+    const ROUND_ENDED = "round ended";
+
+    function Status(game) {
+        if(game == null)
+            return NEW_GAME;
+
+        if(isNullOrWhitespace(game.letter))
+            return WAITING_TO_START;
+        
+        if(game.letter == "$")
+            return GAME_ENDED;
+        
+        if(game.letter.indexOf("_") < 0)
+            return ROUND_ACTIVE;
+        
+        return ROUND_ENDED;
+    }
 
 </script>
 
 <main>
     <i class="nes-logo" visible:active={reloading} style="position: absolute; visibility: hidden; top: 20px; left: 20px"></i>
-    {#if game == null}
+    {#if Status(game) == NEW_GAME}
         <h1 class="nes-text is-primary">Create new game</h1>
         <div class="nes-field is-inline">
             <label for="name_field">Player</label>
@@ -230,7 +254,7 @@
         </div>
         
         
-    {:else if game.letter==null}
+    {:else if Status(game) == WAITING_TO_START}
         <h1 class="nes-text is-primary">Hello {player}, welcome to the game {game.id}!</h1>
         <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a>
         <p>Current players:</p>
@@ -244,48 +268,16 @@
         </div>
         
 
-    {:else if game.letter == "$"}
+    {:else if Status(game) == GAME_ENDED}
         <h1 class="nes-text is-primary">Game {game.id} ended.</h1>
-        <p>Scoreboard:</p>
-        <table class="nes-table is-bordered is-justified">
-            <thead>
-                <tr>
-                    <th>Player</th>
-                    {#each game.players as player}
-                        <th>{player}</th>
-                    {/each}
-                </tr>
-            </thead>
-            <tbody>
-            {#each scoreboard as item}
-                <tr>
-                <td class="topic">{item.letter}</td>
-                {#each game.players as player}
-                    <td>{item.scores
-                        .filter(x => x.player == player)
-                        .map(x => x.score)}</td>
-                {/each}
-                </tr>
-            {/each}
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td>Totals:</td>
-                    {#each game.players as player}
-                        <td>{scoreboard.reduce((r,x)=>{ 
-                            return r + x.scores.filter(x => x.player == player)[0].score
-                        }, 0)}</td>
-                    {/each}
-                </tr>
-            </tfoot>
-        </table>
+        <Scoreboard game={game} scores={scores}></Scoreboard>
         <br>
         <div class="to-right">
             <button class="nes-btn is-error" on:click={deleteGameClicked}>quit game</button>
         </div>
         
 
-    {:else if game.letter.indexOf("_") < 0}
+    {:else if Status(game) == ROUND_ACTIVE}
         <h1 class="nes-text is-primary">Game {game.id}, round {letter(game)}</h1>
         <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a>
         <br><br>
@@ -304,36 +296,7 @@
         <br>
         <p>Round results:</p>
         <br>
-        <table class="nes-table is-bordered is-justified">
-            <thead>
-                <tr>
-                    <th>Player</th>
-                    {#each round as item }
-                        <th>{item.player}</th>
-                    {/each}
-                </tr>
-            </thead>
-            <tbody>
-            {#each game.topics as topic, i }
-                <tr>
-                <td class="topic">{topic}</td>
-                {#each round as item }
-                    <td class="answer" on:click={markAnswer(item.player, game.topics[i])}>
-                        {item.answers[i]}
-                    </td>
-                {/each}
-                </tr>
-            {/each}
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td>Totals:</td>
-                    {#each round as item}
-                        <td>{item.score}</td>
-                    {/each}
-                </tr>
-            </tfoot>
-        </table>
+        <RoundResults game={game} round={round} isHost={true} on:markAnswer={markAnswer}></RoundResults>
         <br>
         <div class="to-right">
             <button class="nes-btn is-success" on:click={nextRoundClicked}>start next round</button>
@@ -343,6 +306,7 @@
 
     <ul id="events"></ul>
 </main>
+
 
 <style>
 	main {
@@ -363,10 +327,10 @@
     .nes-table td.unique{
         background-color: green;
     }
-    .nes-table td.answer:hover{
+    .nes-table.is-host td.answer:hover{
         background-color: maroon;
     }
-    .nes-table td.answer:hover .i{
+    .nes-table.is-host td.answer:hover .i{
         display: inline-block;
     }
     .nes-table th{

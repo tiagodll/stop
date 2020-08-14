@@ -1,8 +1,10 @@
 <script>
 	import { isNullOrWhitespace } from './helpers.js';
+    import Scoreboard from './components/Scoreboard.svelte';
+    import RoundResults from './components/RoundResults.svelte';
 	
     export let game_id, player;
-    let game = null, answers=[], round=[], scoreboard=[], poller = null, reloading=false;
+    let game = null, answers=[], round=[], scores=[], poller = null, reloading=false;
 
     var searchParams = new URLSearchParams(document.URL.substr(document.URL.indexOf("?")));
 	game_id = searchParams.get("game_id");
@@ -108,13 +110,13 @@
         .then((result) => { 
             round = result
             if(game.letter == "$"){
-                scoreboard = [];
+                scores = [];
                 round.forEach(r => {
-                    if(scoreboard.findIndex(x => x.letter == r.letter) < 0)
-                        scoreboard.push({ letter: r.letter, scores: [] });
+                    if(scores.findIndex(x => x.letter == r.letter) < 0)
+                        scores.push({ letter: r.letter, scores: [] });
                     
-                    let i = scoreboard.findIndex(x => x.letter == r.letter);
-                    scoreboard[i].scores.push({
+                    let i = scores.findIndex(x => x.letter == r.letter);
+                    scores[i].scores.push({
                         player: r.player,
                         score: r.score
                     }); 
@@ -209,39 +211,7 @@
 
     {:else if Status(game) == GAME_ENDED}
         <h1 class="nes-text is-primary">Game {game.id} ended.</h1>
-        <p>Scoreboard:</p>
-        <table class="nes-table is-bordered is-justified">
-            <thead>
-                <tr>
-                    <th>Player</th>
-                    {#each game.players as player}
-                        <th>{player}</th>
-                    {/each}
-                </tr>
-            </thead>
-            <tbody>
-            {#each scoreboard as item}
-                <tr>
-                <td class="topic">{item.letter}</td>
-                {#each game.players as player}
-                    <td>{item.scores
-                        .filter(x => x.player == player)
-                        .map(x => x.score)}</td>
-                {/each}
-                </tr>
-            {/each}
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td>Totals:</td>
-                    {#each game.players as player}
-                        <td>{scoreboard.reduce((r,x)=>{ 
-                            return r + x.scores.filter(x => x.player == player)[0].score
-                        }, 0)}</td>
-                    {/each}
-                </tr>
-            </tfoot>
-        </table>
+        <Scoreboard game={game} scores={scores}></Scoreboard>
         
 	{:else if Status(game) == ROUND_ACTIVE}
         <h1 class="nes-text is-primary">Round {game.letter}</h1>
@@ -262,36 +232,7 @@
         <br>
         <p>Round results:</p>
         <br>
-		<table class="nes-table is-bordered is-justified">
-            <thead>
-                <tr>
-                    <th>Player</th>
-                    {#each round as item }
-                        <th>{item.player}</th>
-                    {/each}
-                </tr>
-            </thead>
-            <tbody>
-            {#each game.topics as topic, i }
-                <tr>
-                    <td class="topic">{topic}</td>
-                    {#each round as item }
-                        <td class="answer">
-                            {item.answers[i]}
-                        </td>
-                    {/each}
-                </tr>
-            {/each}
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td>Totals:</td>
-                    {#each round as item}
-                        <td>{item.score}</td>
-                    {/each}
-                </tr>
-            </tfoot>
-        </table>
+        <RoundResults game={game} round={round} isHost={false}></RoundResults>
     {/if}
 
     <ul id="events"></ul>
