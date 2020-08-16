@@ -1,6 +1,6 @@
 import { Application, Context, isHttpError, Router, ServerSentEvent, Status, ServerSentEventTarget, RouterContext, } from "https://deno.land/x/oak/mod.ts";
 import * as colors from "https://deno.land/std@0.56.0/fmt/colors.ts";
-import nanoid from "https://deno.land/x/nanoid/mod.ts";
+// import nanoid from "https://deno.land/x/nanoid/mod.ts";
 import * as db from "./db.ts";
 import { IGame, IRound } from "./interfaces.ts";
 
@@ -9,6 +9,16 @@ async function renderFile(ctx:any, filename:string){
   const myFileContent = await Deno.readAll(file);
   Deno.close(file.rid);
   ctx.response.body = myFileContent;
+}
+
+function makeid(length:number) {
+  var result           = '';
+  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var charactersLength = characters.length;
+  for ( var i = 0; i < length; i++ ) {
+     result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
 }
 
 export function TheRouter(sqlite : any) {
@@ -33,9 +43,10 @@ export function TheRouter(sqlite : any) {
     const params = JSON.parse(await (await ctx.request.body()).value || "");
     console.log(params);
 
+    //TODO: PUT BACK NANOID!!!!
     let game : IGame = {
-      id: nanoid(6),
-      password: nanoid(4),
+      id: makeid(10),//nanoid(6),
+      password: makeid(4),//nanoid(4),
       players: params.players,
       topics: params.topics
     }
