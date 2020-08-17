@@ -7,13 +7,13 @@
 
 #publish nodejs code
 cd ../client
-cp ../devops/test_client.env ./.env
+cp ../devops/test_client.env .env
 npm install
 npm run build
 
 #build deno docker
 cd ../server
-cp ../devops/test_server.env ./.env
+cp ../devops/test_server.env .env
 
 sudo docker stop stopserver
 sudo docker build -t stopimage . --rm

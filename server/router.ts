@@ -118,7 +118,7 @@ export function TheRouter(sqlite : any) {
       ctx.throw(Status.BadRequest, "Bad Request");
     }
   })
-  .delete("/api/game/:id", async (ctx) => {
+  .post("/api/game/:id/delete", async (ctx) => {
     if (ctx.params && ctx.params.id) {
 
       db.deleteGame(ctx.params.id);

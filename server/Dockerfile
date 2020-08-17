@@ -4,9 +4,7 @@ EXPOSE 3000
 
 WORKDIR /app
 
-USER deno
-
-ADD . .
+ADD . /app
 
 RUN deno cache app.ts
 

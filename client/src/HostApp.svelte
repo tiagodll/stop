@@ -128,8 +128,8 @@
         .catch((error) => { console.error('Error:', error) });
     }
     function deleteGameClicked() {
-        fetch(`${SERVER}/api/game/${game.id}`, {
-            method: 'DELETE',
+        fetch(`${SERVER}/api/game/${game.id}/delete`, {
+            method: 'POST',
             body: ""
         })
         .then((r) => r.json())
