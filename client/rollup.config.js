@@ -8,7 +8,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const production = !process.env.ROLLUP_WATCH;
+const production = process.env.NODE_ENV == 'production';
 
 function serve() {
 	let server;

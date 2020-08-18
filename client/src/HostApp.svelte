@@ -213,7 +213,7 @@
         
     {:else if Status(game) == WAITING_TO_START}
         <h1 class="nes-text is-primary">Hello {player}, welcome to the game {game.id}!</h1>
-        <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a>
+        <a href="{SERVER}/play?game_id={game.id}">{SERVER}/play?game_id={game.id}</a>
         <p>Current players:</p>
         <ul>
             {#each game.players as player }
@@ -236,7 +236,7 @@
 
     {:else if Status(game) == ROUND_ACTIVE}
         <h1 class="nes-text is-primary">Game {game.id}, round {letter(game)}</h1>
-        <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a>
+        <a href="{SERVER}/play?game_id={game.id}">{SERVER}/play?game_id={game.id}</a>
         <br><br>
         <p>Current players:</p>
         <ul>
@@ -249,7 +249,7 @@
         </div>
     {:else}
         <h1 class="nes-text is-primary">Round {letter(game)} finished</h1>
-        <!-- <a href="http://localhost:3000/play?game_id={game.id}">http://localhost:3000/play?game_id={game.id}</a> -->
+        <!-- <a href="{SERVER}/play?game_id={game.id}">{SERVER}/play?game_id={game.id}</a> -->
         <br>
         <p>Round results:</p>
         <br>
