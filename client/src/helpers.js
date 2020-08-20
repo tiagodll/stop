@@ -50,5 +50,5 @@ export function calculateScore(player, round) {
 }
 
 function isAnswerUnique(player, answer, round, i){
-    return round.some(x => x.player != player && x.answers[i] == answer)
+    return !round.some(x => x.player != player && x.answers[i] == answer)
 }
