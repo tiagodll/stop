@@ -5,7 +5,8 @@
     import RoundResults from './components/RoundResults.svelte';
 	
     export let game_id, player;
-    let game = null, answers=[], round=[], scores=[], poller = null, reloading=false;
+    let game = null, answers=[], round=[], scores=[], poller = null;
+    let answersTimeout, reloading=false;
 
     var searchParams = new URLSearchParams(document.URL.substr(document.URL.indexOf("?")));
 	game_id = searchParams.get("game_id");
@@ -85,7 +86,7 @@
     function finishRoundClicked() {
         fetch(`${SERVER}/api/game/${game_id}/finish-round?player=${player}`)
         .then((r) => r.json())
-        .then((result) => { 
+        .then((result) => {
             game = result;
             loadRound(game);
          })
@@ -118,9 +119,14 @@
     }
 
     function saveAnswers(i, data) {
-		answers[i] = data;
 
-        fetch(`${SERVER}/api/game/${game_id}/save-answers`, {
+        answers[i] = data;
+        console.log(answers.join("|"))
+
+        clearTimeout(answersTimeout); 
+        
+        answersTimeout = setTimeout(()=>{
+            fetch(`${SERVER}/api/game/${game_id}/save-answers`, {
             method: 'POST',
             body: JSON.stringify({
 				game_id: game.id,
@@ -128,11 +134,12 @@
                 player: player,
 				answers: answers,
 				score: 0
+                })
             })
-        })
-        .then((r) => r.json())
-        .then((result) => { console.log(result) })
-        .catch((error) => { console.error('Error:', error) });
+            .then((r) => r.json())
+            .then((result) => { console.log(result) })
+            .catch((error) => { console.error('Error:', error) });
+        }, 2000);
     }
 
 </script>
@@ -168,7 +175,7 @@
         {#each answers as answer, i }
         <div class="nes-field is-inline">
             <label for="name_field">{game.topics[i]}</label>
-            <input class="nes-input" type="text" on:change={(e) => saveAnswers(i, e.target.value)} />
+            <input class="nes-input" type="text" on:input={(e) => saveAnswers(i, e.target.value)} />
         </div>
         {/each}
         <br>

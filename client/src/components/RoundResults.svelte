@@ -17,7 +17,7 @@
 <table class="nes-table is-bordered is-justified" class:is-host="{isHost}">
     <thead>
         <tr>
-            <th>Player</th>
+            <th></th>
             {#each round as item }
                 <th>{item.player}</th>
             {/each}
