@@ -120,7 +120,13 @@
 
     function saveAnswers(i, data) {
 
-        answers[i] = data;
+        //answers = document.querySelectorAll(".nes-input.answer").map(x => x.value)
+        answers = []
+        document.querySelectorAll(".nes-input.answer").forEach(x => {
+            answers.push(x.value);
+        })
+
+        //answers[i] = data;
         console.log(answers.join("|"))
 
         clearTimeout(answersTimeout); 
@@ -175,7 +181,7 @@
         {#each answers as answer, i }
         <div class="nes-field is-inline">
             <label for="name_field">{game.topics[i]}</label>
-            <input class="nes-input" type="text" on:input={(e) => saveAnswers(i, e.target.value)} />
+            <input class="nes-input answer" type="text" on:input={(e) => saveAnswers(i, e.target.value)} />
         </div>
         {/each}
         <br>

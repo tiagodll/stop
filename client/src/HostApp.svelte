@@ -78,6 +78,10 @@
         selected_topic = "";
         document.getElementById("selected_topic").focus();
     }
+    function removeItemClicked(elem){
+        topics = topics.filter(e => e !== elem.target.textContent);
+        return false;
+    }
     function startGameClicked() {
         fetch(`${SERVER}/api/create-game`, {
             method: 'POST',
@@ -205,7 +209,7 @@
 
         <ul>
             {#each topics as topic }
-                <li>{topic}</li>
+                <li on:click={removeItemClicked}>{topic}</li>
             {/each}
         </ul>
         <div class="to-right">
