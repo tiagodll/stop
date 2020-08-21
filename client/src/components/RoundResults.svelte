@@ -1,4 +1,7 @@
 <script>
+    import { createEventDispatcher } from 'svelte';
+    const dispatch = createEventDispatcher();
+
     export let isHost=false, game={}, round=[];
 
     function markAnswerIfHost(player, topic){
@@ -6,6 +9,10 @@
             dispatch('markAnswer', { player: player, topic: topic});
     }
 </script>
+
+{#if isHost}
+    <p>Click to mark invalid answers</p>
+{/if}
 
 <table class="nes-table is-bordered is-justified" class:is-host="{isHost}">
     <thead>

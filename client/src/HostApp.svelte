@@ -139,7 +139,9 @@
         .catch((error) => { console.error('Error:', error) });
     }
 
-    function markAnswer(player, topic) {
+    function markAnswer(f) {
+        let player = f.detail.player;
+        let topic = f.detail.topic;
         let pi = round.findIndex(x => x.player == player);
         let ti = game.topics.findIndex(x => x == topic);
 
