@@ -126,7 +126,7 @@
             answers.push(x.value);
         })
 
-        //answers[i] = data;
+        answers[i] = data;
         console.log(answers.join("|"))
 
         clearTimeout(answersTimeout); 

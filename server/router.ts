@@ -92,7 +92,7 @@ export function TheRouter(sqlite : any) {
   .get("/api/game/:id", async (ctx) => {
     if (ctx.params && ctx.params.id) {
       const game = await db.fetchGame(ctx.params.id);
-      console.log(game);
+      //console.log(game);
       if(game == null)
         notFound(ctx);
       else
@@ -139,7 +139,7 @@ export function TheRouter(sqlite : any) {
       const game = await db.fetchGame(ctx.params.id);
       game.letter = String.fromCharCode(Math.ceil(Math.random() * 25) + 65);
       db.saveGame(game)
-      console.log(game);
+      //console.log(game);
       ctx.response.body = game;
     }else{
       ctx.throw(Status.BadRequest, "Bad Request");
