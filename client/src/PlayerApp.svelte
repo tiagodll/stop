@@ -30,8 +30,9 @@
             }
             else{
                 game = result;
-                answers = game.topics.map(_ => "")
-                if(game.letter == "$" || game.letter.indexOf("_") > 0){
+                if(game.letter == null){
+                    answers = game.topics.map(_ => "")
+                }else if(game.letter == "$" || game.letter.indexOf("_") > 0){
                     loadRound(game);
                 }
             }
@@ -131,7 +132,7 @@
 
         clearTimeout(answersTimeout); 
         
-        answersTimeout = setTimeout(()=>{
+        answersTimeout = setTimeout((function() {
             fetch(`${SERVER}/api/game/${game_id}/save-answers`, {
             method: 'POST',
             body: JSON.stringify({
@@ -145,7 +146,7 @@
             .then((r) => r.json())
             .then((result) => { console.log(result) })
             .catch((error) => { console.error('Error:', error) });
-        }, 2000);
+        }.bind(answers)), 2000);
     }
 
 </script>
