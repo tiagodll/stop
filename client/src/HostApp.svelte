@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
     import { isNullOrWhitespace, letter, calculateScore, Status, 
         NEW_GAME, WAITING_TO_START, GAME_ENDED, ROUND_ACTIVE, ROUND_ENDED } from './helpers.js';
     import Scoreboard from './components/Scoreboard.svelte';

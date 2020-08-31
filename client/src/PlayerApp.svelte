@@ -137,7 +137,7 @@
             method: 'POST',
             body: JSON.stringify({
 				game_id: game.id,
-				letter: game.letter,
+				letter: letter(game),
                 player: player,
 				answers: answers,
 				score: 0
