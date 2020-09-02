@@ -29,8 +29,11 @@
                 <tr>
                     <td>Totals:</td>
                     {#each game.players as player}
-                        <td>{scores.reduce((r,x)=>{ 
-                            return r + x.scores.filter(x => x.player == player)[0].score
+                        <td>{scores.reduce((r,x)=>{
+                            let score = x.scores.filter(x => x.player == player)[0] 
+                                ? x.scores.filter(x => x.player == player)[0].score 
+                                : 0
+                            return r + score
                         }, 0)}</td>
                     {/each}
                 </tr>
