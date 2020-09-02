@@ -7,7 +7,7 @@
         <table class="nes-table is-bordered is-justified">
             <thead>
                 <tr>
-                    <th>Player</th>
+                    <th></th>
                     {#each game.players as player}
                         <th>{player}</th>
                     {/each}
