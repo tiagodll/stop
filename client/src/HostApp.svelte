@@ -3,6 +3,7 @@
         NEW_GAME, WAITING_TO_START, GAME_ENDED, ROUND_ACTIVE, ROUND_ENDED } from './helpers.js';
     import Scoreboard from './components/Scoreboard.svelte';
     import RoundResults from './components/RoundResults.svelte';
+import { onMount } from 'svelte';
 
     export let game_id, player;
     let game = null, topics=[], players=[], selected_topic="", round=[], scores=[], poller = null, reloading=false;;
@@ -14,6 +15,7 @@
         game_id = localStorage.getItem("game_id");
         loadGame(game_id)
     }
+
 
     
 
@@ -77,6 +79,13 @@
         topics = topics.concat(selected_topic);
         selected_topic = "";
         document.getElementById("selected_topic").focus();
+    }
+    function enterKeyTopic(event){
+        enterKey(event, newTopicClicked);
+    }
+    function enterKey(event, func){
+        if(event.keyCode == 13) 
+            func();
     }
     function removeItemClicked(elem){
         topics = topics.filter(e => e !== elem.target.textContent);
@@ -182,11 +191,9 @@
     // });
 
 
-    // onMount(async () => {
-    //     player = "xxxx"
-	// 	// const res = await fetch(`https://jsonplaceholder.typicode.com/photos?_limit=20`);
-	// 	// photos = await res.json();
-    // });
+    onMount(async () => {
+        document.getElementById("selected_topic").focus();
+    });
 
 </script>
 
@@ -203,7 +210,7 @@
 
         <div class="nes-field is-inline">
             <label for="name_field">Topic</label>
-            <input class="nes-input" id="selected_topic" type="text" bind:value={selected_topic} placeholder="topic">
+            <input class="nes-input" id="selected_topic" type="text" bind:value={selected_topic} on:keypress={enterKeyTopic} placeholder="topic">
             <button class="nes-btn is-primary" on:click={newTopicClicked}>add topic</button>
         </div>
 
