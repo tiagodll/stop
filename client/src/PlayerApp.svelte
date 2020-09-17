@@ -5,7 +5,7 @@
     import RoundResults from './components/RoundResults.svelte';
 	
     export let game_id, player;
-    let game = null, answers=[], round=[], scores=[], poller = null;
+    let game = null, answers=[], round=[], scores=[], poller = null, isHost=false;
     let answersTimeout, reloading=false;
 
     var searchParams = new URLSearchParams(document.URL.substr(document.URL.indexOf("?")));
@@ -30,6 +30,9 @@
             }
             else{
                 game = result;
+                if(game.players[0] == player)
+                    isHost = true;
+
                 if(game.letter == null){
                     answers = game.topics.map(_ => "")
                 }else if(game.letter == "$" || game.letter.indexOf("_") > 0){
@@ -149,6 +152,69 @@
         }.bind(answers)), 2000);
     }
 
+    function nextRoundClicked() {
+        fetch(`${SERVER}/api/game/${game.id}/next-round`, {
+            method: 'POST',
+            body: JSON.stringify(round)
+        })
+        .then((r) => r.json())
+        .then((result) => {
+            game = result;
+            game_id = game.id;
+            localStorage.setItem("game_id", game.id);
+            localStorage.setItem("player", player);
+        })
+        .catch((error) => { console.error('Error:', error) });
+    }
+    function endGameClicked(){
+        fetch(`${SERVER}/api/game/${game.id}/end-game`, {
+            method: 'POST',
+            body: JSON.stringify(round)
+        })
+        .then((r) => r.json())
+        .then((result) => {
+            game = result;
+            loadRound(game);
+        })
+        .catch((error) => { console.error('Error:', error) });
+    }
+    function deleteGameClicked() {
+        fetch(`${SERVER}/api/game/${game.id}/delete`, {
+            method: 'POST',
+            body: ""
+        })
+        .then((r) => r.json())
+        .then((result) => {
+            document.location.href = "/"
+        })
+        .catch((error) => { console.error('Error:', error) });
+    }
+
+    function markAnswer(f) {
+        let player = f.detail.player;
+        let topic = f.detail.topic;
+        let pi = round.findIndex(x => x.player == player);
+        let ti = game.topics.findIndex(x => x == topic);
+
+        let ans = round[pi].answers[ti];
+        if(isNullOrWhitespace(ans))
+            return;
+
+        round[pi].answers[ti] = ans[0] == "_" ? ans.substr(1): "_" + ans;
+        round[pi].score = calculateScore(player, round);
+        fetch(`${SERVER}/api/game/${game_id}/save-answers`, {
+            method: 'POST',
+            body: JSON.stringify({
+                ...round[pi]
+            })
+        })
+        .then((r) => r.json())
+        .then((result) => {            
+            //game = result;
+        })
+        .catch((error) => { console.error('Error:', error) });
+    }
+
 </script>
 
 <main>
@@ -165,16 +231,31 @@
     {:else if Status(game) == WAITING_TO_START}
         <h1 class="nes-text is-primary">Hello {player}, welcome to the game {game.id}!</h1>
         <p>Waiting round to start</p>
+        {#if isHost}
+        <p>Share this link to your friends: <a href="{SERVER}/play?game_id={game.id}">{SERVER}/play?game_id={game.id}</a></p>
+        {/if}
         <p>Current players:</p>
         <ul>
             {#each game.players as player }
                 <li>{player}</li>
             {/each}
         </ul>
+        
+        {#if isHost}
+        <div class="to-right">
+            <button class="nes-btn is-success" on:click={nextRoundClicked}>begin round</button>
+        </div>
+        {/if}
 
     {:else if Status(game) == GAME_ENDED}
         <h1 class="nes-text is-primary">Game {game.id} ended.</h1>
         <Scoreboard game={game} scores={scores}></Scoreboard>
+        <br>
+        {#if isHost}
+        <div class="to-right">
+            <button class="nes-btn is-error" on:click={deleteGameClicked}>quit game</button>
+        </div>
+        {/if}
         
 	{:else if Status(game) == ROUND_ACTIVE}
         <h1 class="nes-text is-primary">Round {game.letter}</h1>
@@ -195,7 +276,13 @@
         <br>
         <p>Round results:</p>
         <br>
-        <RoundResults game={game} round={round} isHost={false}></RoundResults>
+        <RoundResults game={game} round={round} isHost={isHost} on:markAnswer={markAnswer}></RoundResults>
+        {#if isHost}
+        <div class="to-right">
+            <button class="nes-btn is-success" on:click={nextRoundClicked}>start next round</button>
+            <button class="nes-btn is-warning" on:click={endGameClicked}>finish game</button>
+        </div>
+        {/if}
     {/if}
 
     <ul id="events"></ul>

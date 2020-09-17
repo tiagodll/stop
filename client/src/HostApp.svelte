@@ -107,8 +107,6 @@ import { onMount } from 'svelte';
         console.log(elem.target.textContent)
         suggested = suggested.filter(x => x != elem.target.textContent);
         topics = topics.concat(elem.target.textContent);
-        // document.getElementById("selected_topic").innerHTML = elem.target.textContent;
-        // newTopicClicked();
     }
     function startGameClicked() {
         fetch(`${SERVER}/api/create-game`, {
@@ -124,41 +122,17 @@ import { onMount } from 'svelte';
             game_id = game.id;
             localStorage.setItem("game_id", game.id);
             localStorage.setItem("player", player);
-            poller = setInterval(() => { 
-                reloading=true; 
-                console.log("reloading..."); 
-                loadGame(game_id); 
-                reloading=true; }, 1000);
+            document.location.href = `${SERVER}/play?game_id=${game.id}`;
+            // poller = setInterval(() => { 
+            //     reloading=true; 
+            //     console.log("reloading..."); 
+            //     loadGame(game_id); 
+            //     reloading=true; }, 1000);
         })
         .catch((error) => { console.error('Error:', error) });
     }
 
-    function nextRoundClicked() {
-        fetch(`${SERVER}/api/game/${game.id}/next-round`, {
-            method: 'POST',
-            body: JSON.stringify(round)
-        })
-        .then((r) => r.json())
-        .then((result) => {
-            game = result;
-            game_id = game.id;
-            localStorage.setItem("game_id", game.id);
-            localStorage.setItem("player", player);
-        })
-        .catch((error) => { console.error('Error:', error) });
-    }
-    function endGameClicked(){
-        fetch(`${SERVER}/api/game/${game.id}/end-game`, {
-            method: 'POST',
-            body: JSON.stringify(round)
-        })
-        .then((r) => r.json())
-        .then((result) => {
-            game = result;
-            loadRound(game);
-        })
-        .catch((error) => { console.error('Error:', error) });
-    }
+
     function deleteGameClicked() {
         fetch(`${SERVER}/api/game/${game.id}/delete`, {
             method: 'POST',
@@ -171,43 +145,7 @@ import { onMount } from 'svelte';
         .catch((error) => { console.error('Error:', error) });
     }
 
-    function markAnswer(f) {
-        let player = f.detail.player;
-        let topic = f.detail.topic;
-        let pi = round.findIndex(x => x.player == player);
-        let ti = game.topics.findIndex(x => x == topic);
 
-        let ans = round[pi].answers[ti];
-        if(isNullOrWhitespace(ans))
-            return;
-
-        round[pi].answers[ti] = ans[0] == "_" ? ans.substr(1): "_" + ans;
-        round[pi].score = calculateScore(player, round);
-        fetch(`${SERVER}/api/game/${game_id}/save-answers`, {
-            method: 'POST',
-            body: JSON.stringify({
-                ...round[pi]
-            })
-        })
-        .then((r) => r.json())
-        .then((result) => {            
-            //game = result;
-        })
-        .catch((error) => { console.error('Error:', error) });
-    }
-
-    
-    // const sse = new EventSource(`${SERVER}/sse/1234567`);//, { withCredentials: true });
-    // sse.onmessage = (evt) => {
-    //     const li = document.createElement("li");
-    //     li.textContent = `message: ${evt.data}`;
-    //     document.getElementById("events").appendChild(li);
-    // };
-
-    // const socket = new EventSource("/sse");
-    // socket.addEventListener("ping", (evt) => {
-    //     console.log(evt.data);
-    // });
 
 
     onMount(async () => {
@@ -253,54 +191,10 @@ import { onMount } from 'svelte';
             <button class="nes-btn" class:is-success="{topics.length>1}" disabled={topics.length<2} on:click={startGameClicked}>start game</button>
         </div>
         
-        
-    {:else if Status(game) == WAITING_TO_START}
-        <h1 class="nes-text is-primary">Hello {player}, welcome to the game {game.id}!</h1>
-        <a href="{SERVER}/play?game_id={game.id}">{SERVER}/play?game_id={game.id}</a>
-        <p>Current players:</p>
-        <ul>
-            {#each game.players as player }
-                <li>{player}</li>
-            {/each}
-        </ul>
-        <div class="to-right">
-            <button class="nes-btn is-success" on:click={nextRoundClicked}>begin round</button>
-        </div>
-        
-
-    {:else if Status(game) == GAME_ENDED}
-        <h1 class="nes-text is-primary">Game {game.id} ended.</h1>
-        <Scoreboard game={game} scores={scores}></Scoreboard>
-        <br>
-        <div class="to-right">
-            <button class="nes-btn is-error" on:click={deleteGameClicked}>quit game</button>
-        </div>
-        
-
-    {:else if Status(game) == ROUND_ACTIVE}
-        <h1 class="nes-text is-primary">Game {game.id}, round {letter(game)}</h1>
-        <a href="{SERVER}/play?game_id={game.id}">{SERVER}/play?game_id={game.id}</a>
-        <br><br>
-        <p>Current players:</p>
-        <ul>
-            {#each game.players as player }
-                <li>{player}</li>
-            {/each}
-        </ul>
-        <div class="to-right">
-            <button class="nes-btn is-error" on:click={deleteGameClicked}>quit game</button>
-        </div>
     {:else}
-        <h1 class="nes-text is-primary">Round {letter(game)} finished</h1>
-        <!-- <a href="{SERVER}/play?game_id={game.id}">{SERVER}/play?game_id={game.id}</a> -->
-        <br>
-        <p>Round results:</p>
-        <br>
-        <RoundResults game={game} round={round} isHost={true} on:markAnswer={markAnswer}></RoundResults>
-        <br>
+        
         <div class="to-right">
-            <button class="nes-btn is-success" on:click={nextRoundClicked}>start next round</button>
-            <button class="nes-btn is-warning" on:click={endGameClicked}>finish game</button>
+            <button class="nes-btn is-error" on:click={deleteGameClicked}>quit game</button>
         </div>
     {/if}
 
