@@ -7,6 +7,18 @@ import { onMount } from 'svelte';
 
     export let game_id, player;
     let game = null, topics=[], players=[], selected_topic="", round=[], scores=[], poller = null, reloading=false;;
+    let suggested = [
+        "Animal",
+        "Bands",
+        "Color",
+        "Company",
+        "Country", 
+        "Gadget",
+        "Food",
+        "Movie",
+        "Super hero / villain",
+        "Video game",
+    ]
 
     if(!isNullOrWhitespace(localStorage.getItem("player")))
         player = localStorage.getItem("player");
@@ -90,6 +102,13 @@ import { onMount } from 'svelte';
     function removeItemClicked(elem){
         topics = topics.filter(e => e !== elem.target.textContent);
         return false;
+    }
+    function addSuggestedItemClicked(elem){
+        console.log(elem.target.textContent)
+        suggested = suggested.filter(x => x != elem.target.textContent);
+        topics = topics.concat(elem.target.textContent);
+        // document.getElementById("selected_topic").innerHTML = elem.target.textContent;
+        // newTopicClicked();
     }
     function startGameClicked() {
         fetch(`${SERVER}/api/create-game`, {
@@ -214,11 +233,22 @@ import { onMount } from 'svelte';
             <button class="nes-btn is-primary" on:click={newTopicClicked}>add topic</button>
         </div>
 
+        <hr>
+        <h3>Selected topics:</h3>
         <ul>
             {#each topics as topic }
                 <li on:click={removeItemClicked}>{topic}</li>
             {/each}
         </ul>
+
+        <hr>
+        <h3>suggestions</h3>
+        <ul>
+            {#each suggested as topic }
+                <li on:click={addSuggestedItemClicked}>{topic}</li>
+            {/each}
+        </ul>
+
         <div class="to-right">
             <button class="nes-btn" class:is-success="{topics.length>1}" disabled={topics.length<2} on:click={startGameClicked}>start game</button>
         </div>
