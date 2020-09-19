@@ -192,7 +192,7 @@ import { onMount } from 'svelte';
         </div>
         
     {:else}
-        <h1 class="nes-text is-primary">You still have the game {game} running</h1>
+        <h1 class="nes-text is-primary">You still have the game {game.id} running</h1>
         <div class="to-right">
             <button class="nes-btn is-error" on:click={deleteGameClicked}>quit game</button>
         </div>
