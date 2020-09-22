@@ -3,7 +3,7 @@
         NEW_GAME, WAITING_TO_START, GAME_ENDED, ROUND_ACTIVE, ROUND_ENDED } from './helpers.js';
     import Scoreboard from './components/Scoreboard.svelte';
     import RoundResults from './components/RoundResults.svelte';
-	
+
     export let game_id, player;
     let game = null, answers=[], round=[], scores=[], poller = null, isHost=false;
     let answersTimeout, reloading=false;
@@ -122,15 +122,20 @@
         .catch((error) => { console.error('Error:', error); return null });
     }
 
+    function handleInput(e, i){
+        e.target.value = e.target.value.trimLeft();
+        saveAnswers(i, e.target.value)
+    }
+
     function saveAnswers(i, data) {
 
         //answers = document.querySelectorAll(".nes-input.answer").map(x => x.value)
         answers = []
-        document.querySelectorAll(".nes-input.answer").forEach(x => {
+        document.querySelectorAll(".nes-input.answer").forEach((x:any) => {
             answers.push(x.value);
         })
 
-        answers[i] = data;
+        answers[i] = data
         console.log(answers.join("|"))
 
         clearTimeout(answersTimeout); 
@@ -233,6 +238,9 @@
         <p>Waiting round to start</p>
         {#if isHost}
         <p>Share this link to your friends: <a href="{SERVER}/play?game_id={game.id}">{SERVER}/play?game_id={game.id}</a></p>
+        <div style="text-align: center">
+            <img id="qrcode" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={SERVER}/play?game_id={game.id}" />
+        </div>
         {/if}
         <p>Current players:</p>
         <ul>
@@ -263,7 +271,7 @@
         {#each answers as answer, i }
         <div class="nes-field is-inline">
             <label for="name_field">{game.topics[i]}</label>
-            <input class="nes-input answer" type="text" on:input={(e) => saveAnswers(i, e.target.value)} />
+            <input class="nes-input answer" type="text" on:input={(e) => handleInput(e, i)} />
         </div>
         {/each}
         <br>

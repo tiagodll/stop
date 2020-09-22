@@ -29,7 +29,7 @@ app.use(async (ctx, next) => {
   ctx.response.headers.set("X-Response-Time", `${ms}ms`);
 });
 
-app.use(oakCors());//{ origin: "/^.+localhost:(3000|5000)$/" }));//{ origin: /^.+localhost:(5000|3000)$/, optionsSuccessStatus: 200 }));
+// app.use(oakCors());
 app.use(router.routes());
 app.use(router.allowedMethods());
 

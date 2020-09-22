@@ -39,7 +39,7 @@ export function calculateScore(player, round) {
         if(isNullOrWhitespace(x))
             return r;
 
-        let l = x[0].toUpperCase();
+        let l = x[0].normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
         if(l == round[pi].letter)
             return r + (isAnswerUnique(player, x, round, i) ? 2 : 1);
         if(l == "_")
